@@ -342,41 +342,41 @@ DEVICE=$(dialog --clear --title "Manjaro ARM Installer" \
         --menu "Choose a device:" 20 75 10 \
         "rpi4"          "Raspberry Pi 4 (and 3)" \
         "pbpro"         "Pinebook Pro" \
-		"rockpro64"     "RockPro64" \
-		"rockpi4b"      "Rock Pi 4B" \
-		"rockpi4c"      "Rock Pi 4C" \
-		"on2"           "Odroid N2" \
-		"on2-plus"      "Odroid N2+" \
-		"oc4"           "Odroid C4" \
-		"oc2"           "Odroid C2" \
-		"pinebook"      "Pinebook" \
-		"pine64-lts"    "Pine64-LTS / Sopine" \
-		"pine64"        "Pine64+" \
-		"pine-h64"      "Pine H64" \
-		"rock64"        "Rock64" \
-		"roc-cc"        "LibreComputer Renegade" \
-		"nanopc-t4"     "NanoPC T4" \
-		"vim3"          "Khadas Vim 3" \
-		"vim2"          "Khadas Vim 2" \
-		"vim1"          "Khadas Vim 1" \
-		"gt1-ultimate"  "Beelink GT1 Ultimate" \
-		3>&1 1>&2 2>&3 3>&-)
+        "rockpro64"     "RockPro64" \
+        "rockpi4b"      "Rock Pi 4B" \
+        "rockpi4c"      "Rock Pi 4C" \
+        "on2"           "Odroid N2" \
+        "on2-plus"      "Odroid N2+" \
+        "oc4"           "Odroid C4" \
+        "oc2"           "Odroid C2" \
+        "pinebook"      "Pinebook" \
+        "pine64-lts"    "Pine64-LTS / Sopine" \
+        "pine64"        "Pine64+" \
+        "pine-h64"      "Pine H64" \
+        "rock64"        "Rock64" \
+        "roc-cc"        "LibreComputer Renegade" \
+        "nanopc-t4"     "NanoPC T4" \
+        "vim3"          "Khadas Vim 3" \
+        "vim2"          "Khadas Vim 2" \
+        "vim1"          "Khadas Vim 1" \
+        "gt1-ultimate"  "Beelink GT1 Ultimate" \
+        3>&1 1>&2 2>&3 3>&-)
 
 
 #The if statement makes sure that the user has put in something in the previous prompt. If not (left blank or pressed cancel) the script will end
 if [ ! -z "$DEVICE" ]; then
-	EDITION=$(dialog --clear --title "Manjaro ARM Installer" \
-		--menu "Choose an edition:" 20 75 10 \
-		"minimal"    "Minimal Edition            (only CLI)" \
-		"kde-plasma" "Full KDE/Plasma Desktop    (full featured)" \
-		"xfce"       "Full XFCE desktop and apps (full featured)" \
-		"mate"       "Full MATE desktop and apps (lightweight)" \
-		"lxqt"       "Full LXQT Desktop and apps (lightweight)" \
-		"i3"         "Mininal i3 WM with apps    (very light)" \
-		"sway"		 "Minimal Sway WM with apps  (very light)" \
-		"server"     "Minimal with LAMP and Docker (only cli)" \
-		"gnome"      "Full Gnome desktop and apps (EXPERIMANTAL)" \
-		3>&1 1>&2 2>&3 3>&-) 
+    EDITION=$(dialog --clear --title "Manjaro ARM Installer" \
+        --menu "Choose an edition:" 20 75 10 \
+        "minimal"       "Minimal Edition            (only CLI)" \
+        "kde-plasma"    "Full KDE/Plasma Desktop    (full featured)" \
+        "xfce"          "Full XFCE desktop and apps (full featured)" \
+        "mate"          "Full MATE desktop and apps (lightweight)" \
+        "lxqt"          "Full LXQT Desktop and apps (lightweight)" \
+        "i3"            "Mininal i3 WM with apps    (very light)" \
+        "sway"          "Minimal Sway WM with apps  (very light)" \
+        "server"        "Minimal with LAMP and Docker (only cli)" \
+        "gnome"         "Full Gnome desktop and apps (EXPERIMANTAL)" \
+        3>&1 1>&2 2>&3 3>&-) 
 
 else 
 	clear
