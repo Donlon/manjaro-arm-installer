@@ -77,6 +77,7 @@ sudo bash ./manjaro-arm-installer
 * Khadas Vim 3
 * Khadas Vim 2
 * Khadas Vim 1
+* Beelink GT1 Ultimate
 
 ## Supported Editions / Desktops:
 * Minimal (no xorg, no apps)

@@ -340,25 +340,26 @@ post_crypt () {
 # Using Dialog to ask for user input for variables
 DEVICE=$(dialog --clear --title "Manjaro ARM Installer" \
         --menu "Choose a device:" 20 75 10 \
-        "rpi4"       "Raspberry Pi 4 (and 3)" \
-        "pbpro"      "Pinebook Pro" \
-		"rockpro64"  "RockPro64" \
-		"rockpi4b"   "Rock Pi 4B" \
-		"rockpi4c"   "Rock Pi 4C" \
-		"on2"        "Odroid N2" \
-		"on2-plus"   "Odroid N2+" \
-		"oc4"		 "Odroid C4" \
-		"oc2"        "Odroid C2" \
-		"pinebook"   "Pinebook" \
-		"pine64-lts" "Pine64-LTS / Sopine" \
-		"pine64"     "Pine64+" \
-		"pine-h64"	 "Pine H64" \
-		"rock64"     "Rock64" \
-		"roc-cc"	 "LibreComputer Renegade" \
-		"nanopc-t4"	 "NanoPC T4" \
-		"vim3"       "Khadas Vim 3" \
-		"vim2"		 "Khadas Vim 2" \
-		"vim1"       "Khadas Vim 1" \
+        "rpi4"          "Raspberry Pi 4 (and 3)" \
+        "pbpro"         "Pinebook Pro" \
+		"rockpro64"     "RockPro64" \
+		"rockpi4b"      "Rock Pi 4B" \
+		"rockpi4c"      "Rock Pi 4C" \
+		"on2"           "Odroid N2" \
+		"on2-plus"      "Odroid N2+" \
+		"oc4"           "Odroid C4" \
+		"oc2"           "Odroid C2" \
+		"pinebook"      "Pinebook" \
+		"pine64-lts"    "Pine64-LTS / Sopine" \
+		"pine64"        "Pine64+" \
+		"pine-h64"      "Pine H64" \
+		"rock64"        "Rock64" \
+		"roc-cc"        "LibreComputer Renegade" \
+		"nanopc-t4"     "NanoPC T4" \
+		"vim3"          "Khadas Vim 3" \
+		"vim2"          "Khadas Vim 2" \
+		"vim1"          "Khadas Vim 1" \
+		"gt1-ultimate"  "Beelink GT1 Ultimate" \
 		3>&1 1>&2 2>&3 3>&-)
 
 
