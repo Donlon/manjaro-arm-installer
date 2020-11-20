@@ -300,6 +300,8 @@ cleanup () {
 			cryptsetup close /dev/mapper/ROOT_MNJRO
 		fi
 		partprobe $SDCARD 1> /dev/null 2>&1
+		
+		info "If you get an error stating 'failed to preserve ownership ... Operation not permitted', it's expected, since the boot partition is FAT32 and does not support ownership permissions..."
 }
 
 tweakinitrd_crypt () {
