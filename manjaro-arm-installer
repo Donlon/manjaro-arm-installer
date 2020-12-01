@@ -124,6 +124,9 @@ create_install() {
     # fetch and extract rootfs
     info "Downloading latest $ARCH rootfs..."
     cd $TMPDIR
+    if [ -f Manjaro-ARM-$ARCH-latest.tar.gz* ]; then
+    rm Manjaro-ARM_$ARCH-latest.tar.gz*
+    fi
     wget -q --show-progress --progress=bar:force:noscroll https://osdn.net/projects/manjaro-arm/storage/.rootfs/Manjaro-ARM-$ARCH-latest.tar.gz
     
     info "Extracting $ARCH rootfs..."
