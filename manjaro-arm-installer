@@ -101,7 +101,7 @@ show_elapsed_time(){
     msg "Time %s: %s minutes..." "$1" "$(elapsed_time $2)"
 }
 
-getarmprofiles () {
+installer_getarmprofiles () {
     info "Getting package lists ready for $DEVICE $EDITION edition..."
     
     if [ -d "$TMPDIR/arm-profiles/" ];
@@ -621,7 +621,7 @@ esac
 
 
 # get the profiles
-getarmprofiles
+installer_getarmprofiles
 
 #Package lists
 PKG_DEVICE=$(grep "^[^#;]" $TMPDIR/arm-profiles/devices/$DEVICE | awk '{print $1}')
