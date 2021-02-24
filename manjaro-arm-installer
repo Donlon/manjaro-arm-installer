@@ -636,6 +636,7 @@ installer_getarmprofiles
 PKG_DEVICE=$(grep "^[^#;]" $TMPDIR/arm-profiles/devices/$DEVICE | awk '{print $1}')
 PKG_EDITION=$(grep "^[^#;]" $TMPDIR/arm-profiles/editions/$EDITION | awk '{print $1}')
 SRV_EDITION=$(grep "^[^#;]" $TMPDIR/arm-profiles/services/$EDITION | awk '{print $1}')
+cat $TMPDIR/arm-profiles/services/$EDITION | sed -e '/^#/d' -e '/>pinephone/d' >$srv_list
 
 
 # Commands
