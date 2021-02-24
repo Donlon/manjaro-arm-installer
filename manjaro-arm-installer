@@ -1,7 +1,7 @@
 #! /bin/bash
 
 # *****************************
-#       Version 1.3.7
+#       Version 1.3.8
 # *****************************
 
 # Set globals
@@ -9,6 +9,7 @@ TMPDIR=/var/tmp/manjaro-arm-installer
 ARCH='aarch64'
 CARCH=$(uname -m)
 NSPAWN='systemd-nspawn -q --resolv-conf=copy-host --timezone=off -D'
+srv_list=/var/tmp/manjaro-arm-installer/services_list
 
 # set colorscheme
 if [[ -f "./dialogrc_gui" ]]; then
@@ -148,8 +149,16 @@ create_install() {
     
     info "Enabling services..."
     # Enable services
-    $NSPAWN $TMPDIR/root systemctl enable getty.target haveged.service 1> /dev/null 2>&1
-    $NSPAWN $TMPDIR/root systemctl enable $SRV_EDITION 1> /dev/null 2>&1
+    $NSPAWN $TMPDIR/root systemctl enable getty.target haveged.service 1>/dev/null
+
+    while read service; do
+        if [ -e $TMPDIR/root/usr/lib/systemd/system/$service ]; then
+            echo "Enabling $service ..."
+            $NSPAWN $TMPDIR/root systemctl enable $service 1>/dev/null
+        else
+            echo "$service not found in rootfs. Skipping."
+        fi
+    done < $srv_list
     if [ -f $TMPDIR/root/usr/bin/xdg-user-dirs-update ]; then
     $NSPAWN $TMPDIR/root systemctl --global enable xdg-user-dirs-update.service 1> /dev/null 2>&1
     fi
@@ -190,7 +199,7 @@ create_install() {
     echo "LANG=$LOCALE" | tee --append $TMPDIR/root/etc/locale.conf 1> /dev/null 2>&1
     $NSPAWN $TMPDIR/root locale-gen
     echo "KEYMAP=$CLIKEYMAP" | tee --append $TMPDIR/root/etc/vconsole.conf 1> /dev/null 2>&1
-    if [[ "$EDITION" != "minimal" ]]; then
+    if [[ "$EDITION" != "minimal" ]] && [[ "$EDITION" != "server" ]]; then
     echo 'Section "InputClass"' > $TMPDIR/root/etc/X11/xorg.conf.d/00-keyboard.conf
     echo 'Identifier "system-keyboard"' >> $TMPDIR/root/etc/X11/xorg.conf.d/00-keyboard.conf
     echo 'Option "XkbLayout" "us"' >> $TMPDIR/root/etc/X11/xorg.conf.d/00-keyboard.conf
