@@ -18,6 +18,7 @@ This script is "interactive". Meaning that it asks you questions when run to cus
 * gawk
 * dosfstools
 * polkit
+* btrfs-progs (for btrfs filesystem support)
 
 ## Installing and using from Manjaro x64 repositories:
 To use this script, please make sure that the following is correct:
