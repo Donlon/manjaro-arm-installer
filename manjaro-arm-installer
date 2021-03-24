@@ -1,7 +1,7 @@
 #! /bin/bash
 
 # *****************************
-#       Version 1.3.8
+#       Version 1.3.9
 # *****************************
 
 # Set globals
@@ -32,6 +32,7 @@ SDCARD=""
 SDTYP=""
 SDDEV=""
 DEV_NAME=""
+FSTYPE=""
 TIMEZONE=""
 LOCALE=""
 HOSTNAME=""
@@ -47,7 +48,7 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 # Sanity checks for dependencies
-declare -a DEPENDENCIES=("git" "parted" "systemd-nspawn" "wget" "dialog" "bsdtar" "openssl" "awk" "mkfs.vfat")
+declare -a DEPENDENCIES=("git" "parted" "systemd-nspawn" "wget" "dialog" "bsdtar" "openssl" "awk" "btrfs" "mkfs.vfat" "mkfs.btrfs")
 
 for i in "${DEPENDENCIES[@]}"; do
   if ! [[ -f "/bin/$i" || -f "/sbin/$i" || -f "/usr/bin/$i" || -f "/usr/sbin/$i" ]] ; then
@@ -213,6 +214,27 @@ create_install() {
         cp $TMPDIR/root/usr/share/applications/corestuff.desktop $TMPDIR/root/etc/xdg/autostart/
     fi
     
+    if [[ "$FSTYPE" = "btrfs" ]]; then
+        info "Adding btrfs support to system..."
+        echo "LABEL=ROOT_MNJRO / btrfs  subvol=@,compress=zstd,defaults,noatime  0  0" >> $TMPDIR/root/etc/fstab
+        echo "LABEL=ROOT_MNJRO /home btrfs  subvol=@home,compress=zstd,defaults,noatime  0  0" >> $TMPDIR/root/etc/fstab
+        sed -i '/^MODULES/{s/)/ btrfs)/}' $TMPDIR/root/etc/mkinitcpio.conf
+        $NSPAWN $TMPDIR/root mkinitcpio -P
+        if [ -f $TMPDIR/root/boot/extlinux/extlinux.conf ]; then
+            sed -i 's/APPEND/& rootflags=subvol=@/' $TMPDIR/root/boot/extlinux/extlinux.conf
+        elif [ -f $TMPDIR/root/boot/boot.ini ]; then
+            sed -i 's/setenv bootargs "/&rootflags=subvol=@ /' $TMPDIR/root/boot/boot.ini
+        elif [ -f $TMPDIR/root/boot/uEnv.ini ]; then
+            sed -i 's/setenv bootargs "/&rootflags=subvol=@ /' $TMPDIR/root/boot/uEnv.ini
+        elif [ -f $TMPDIR/root/boot/cmdline.txt ]; then
+            sed -i 's/root=LABEL=ROOT_MNJRO/& rootflags=subvol=@/' $TMPDIR/root/boot/cmdline.txt
+        elif [ -f $TMPDIR/root/boot/boot.txt ]; then
+            sed -i 's/setenv bootargs/& rootflags=subvol=@/' $TMPDIR/root/boot/boot.txt
+        fi
+
+    fi
+
+    
     [ ! -z "$CRYPT" ] && tweakinitrd_crypt
     
     info "Cleaning install for unwanted files..."
@@ -232,11 +254,11 @@ create_install() {
 }
 
 prepare_card () {
-    msg "Getting $SDCARD ready for $DEVICE..."
+    msg "Getting $SDCARD ready with $FSTYPE for $DEVICE..."
         # umount SD card
         umount ${SDCARD}${SDDEV}1 1> /dev/null 2>&1
         umount ${SDCARD}${SDDEV}2 1> /dev/null 2>&1
-    # Create partitions
+        # Create partitions
         #Clear first 32mb
         dd if=/dev/zero of=${SDCARD} bs=1M count=32 1> /dev/null 2>&1
         #partition with boot and root
@@ -246,33 +268,68 @@ prepare_card () {
         START=`cat /sys/block/$DEV_NAME/${DEV_NAME}${SDDEV}1/start`
         SIZE=`cat /sys/block/$DEV_NAME/${DEV_NAME}${SDDEV}1/size`
         END_SECTOR=$(expr $START + $SIZE)
-        parted -s $SDCARD mkpart primary ext4 "${END_SECTOR}s" 100% 1> /dev/null 2>&1
-        partprobe $SDCARD 1> /dev/null 2>&1
-        mkfs.vfat "${SDCARD}${SDDEV}1" -n BOOT_MNJRO 1> /dev/null 2>&1
+        case "$FSTYPE" in
+            btrfs)
+                parted -s $SDCARD mkpart primary btrfs "${END_SECTOR}s" 100% 1> /dev/null 2>&1
+                partprobe $SDCARD 1> /dev/null 2>&1
+                mkfs.vfat "${SDCARD}${SDDEV}1" -n BOOT_MNJRO 1> /dev/null 2>&1
 
-        if [ -z "$CRYPT" ]; then
-          mkfs.ext4 -O ^metadata_csum,^64bit "${SDCARD}${SDDEV}2" -L ROOT_MNJRO 1> /dev/null 2>&1
-        else
-          cryptsetup luksFormat -q "${SDCARD}${SDDEV}2"
-          cryptsetup open "${SDCARD}${SDDEV}2" ROOT_MNJRO
-          mkfs.ext4 -O ^metadata_csum,^64bit /dev/mapper/ROOT_MNJRO 1> /dev/null 2>&1
-        fi
+                if [ -z "$CRYPT" ]; then
+                    mkfs.btrfs -m single -L ROOT_MNJRO -f "${SDCARD}${SDDEV}2" 1> /dev/null 2>&1
+                else
+                    cryptsetup luksFormat -q "${SDCARD}${SDDEV}2"
+                    cryptsetup open "${SDCARD}${SDDEV}2" ROOT_MNJRO
+                    mkfs.btrfs -m single -f /dev/mapper/ROOT_MNJRO 1> /dev/null 2>&1
+                fi
 
-        mkdir -p $TMPDIR/root
-        mkdir -p $TMPDIR/boot
-        mount ${SDCARD}${SDDEV}1 $TMPDIR/boot
-        if [ -z "$CRYPT" ]; then
-          mount ${SDCARD}${SDDEV}2 $TMPDIR/root
-        else
-          [ ! -e /dev/mapper/ROOT_MNJRO ] && cryptsetup open "${SDCARD}${SDDEV}2" ROOT_MNJRO
-          mount /dev/mapper/ROOT_MNJRO $TMPDIR/root
-        fi
+                mkdir -p $TMPDIR/root
+                mkdir -p $TMPDIR/boot
+                # Do subvolumes
+                mount -o compress=zstd "${SDCARD}${SDDEV}2" $TMPDIR/root
+                btrfs su cr $TMPDIR/root/@ 1> /dev/null 2>&1
+                btrfs su cr $TMPDIR/root/@home 1> /dev/null 2>&1
+                umount $TMPDIR/root
+                mount -o compress=zstd,subvol=@ "${SDCARD}${SDDEV}2" $TMPDIR/root
+                mkdir -p $TMPDIR/root/home
+                mount -o compress=zstd,subvol=@home "${SDCARD}${SDDEV}2" $TMPDIR/root/home
+                mount ${SDCARD}${SDDEV}1 $TMPDIR/boot
+                if [ ! -z "$CRYPT" ]; then
+                    [ ! -e /dev/mapper/ROOT_MNJRO ] && cryptsetup open "${SDCARD}${SDDEV}2" ROOT_MNJRO
+                    mount /dev/mapper/ROOT_MNJRO $TMPDIR/root
+                fi
+                ;;
+            ext4)
+                parted -s $SDCARD mkpart primary ext4 "${END_SECTOR}s" 100% 1> /dev/null 2>&1
+                partprobe $SDCARD 1> /dev/null 2>&1
+                mkfs.vfat "${SDCARD}${SDDEV}1" -n BOOT_MNJRO 1> /dev/null 2>&1
+
+                if [ -z "$CRYPT" ]; then
+                    mkfs.ext4 -O ^metadata_csum,^64bit "${SDCARD}${SDDEV}2" -L ROOT_MNJRO 1> /dev/null 2>&1
+                else
+                    cryptsetup luksFormat -q "${SDCARD}${SDDEV}2"
+                    cryptsetup open "${SDCARD}${SDDEV}2" ROOT_MNJRO
+                    mkfs.ext4 -O ^metadata_csum,^64bit /dev/mapper/ROOT_MNJRO 1> /dev/null 2>&1
+                fi
+
+                mkdir -p $TMPDIR/root
+                mkdir -p $TMPDIR/boot
+                mount ${SDCARD}${SDDEV}1 $TMPDIR/boot
+                if [ -z "$CRYPT" ]; then
+                    mount ${SDCARD}${SDDEV}2 $TMPDIR/root
+                else
+                    [ ! -e /dev/mapper/ROOT_MNJRO ] && cryptsetup open "${SDCARD}${SDDEV}2" ROOT_MNJRO
+                    mount /dev/mapper/ROOT_MNJRO $TMPDIR/root
+                fi
+                ;;
+        esac
 }
 
 cleanup () {
     msg "Writing bootloader and cleaning up after install..."
     # Move boot files
+    if [[ "$FSTYPE" != "btrfs" ]]; then
     mv $TMPDIR/root/boot/* $TMPDIR/boot
+    fi
     # Flash bootloader
     case "$DEVICE" in
     oc2)
@@ -299,11 +356,16 @@ cleanup () {
 	[ ! -z "$CRYPT" ] && post_crypt
     
     #clean up
+    if [[ "$FSTYPE" = "btrfs" ]]; then
+        umount $TMPDIR/root/home
+        umount $TMPDIR/root
+    else
         umount $TMPDIR/root
         umount $TMPDIR/boot
 		if [ ! -z "$CRYPT" ]; then
 			cryptsetup close /dev/mapper/ROOT_MNJRO
 		fi
+    fi
 		partprobe $SDCARD 1> /dev/null 2>&1
 		
 		info "If you get an error stating 'failed to preserve ownership ... Operation not permitted', it's expected, since the boot partition is FAT32 and does not support ownership permissions..."
@@ -515,8 +577,19 @@ else
 	exit 1
 fi
 
-
 if [ ! -z "$SDCARD" ]; then
+    FSTYPE=$(dialog --clear --title "Manjaro ARM Installer" \
+        --menu "Choose a filesystem:" 20 75 10 \
+        "ext4"       "Regular ext4 filesystem" \
+        "btrfs"      "Uses btrfs for root partition and makes / and /home subvolumes" \
+        3>&1 1>&2 2>&3 3>&-) 
+
+else 
+	clear
+	exit 1
+fi
+
+if [ ! -z "$FSTYPE" ]; then
 	let i=0
 	W=()
 	while read -r line; do
@@ -603,6 +676,7 @@ if [ ! -z "$HOSTNAME" ]; then
     Password for $USER = (password hidden)
     Password for root = (password hidden)
     SDCard/eMMC/USB = $SDCARD
+    Filesystem = $FSTYPE
     Timezone = $TIMEZONE
     Locale = $LOCALE
     TTY Keyboard layout = $CLIKEYMAP
