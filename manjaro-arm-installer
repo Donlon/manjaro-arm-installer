@@ -228,8 +228,9 @@ create_install() {
             sed -i 's/setenv bootargs "/&rootflags=subvol=@ /' $TMPDIR/root/boot/uEnv.ini
         elif [ -f $TMPDIR/root/boot/cmdline.txt ]; then
             sed -i 's/root=LABEL=ROOT_MNJRO/& rootflags=subvol=@/' $TMPDIR/root/boot/cmdline.txt
-        elif [ -f $TMPDIR/root/boot/boot.txt ]; then
-            sed -i 's/setenv bootargs/& rootflags=subvol=@/' $TMPDIR/root/boot/boot.txt
+        #elif [ -f $TMPDIR/root/boot/boot.txt ]; then
+        #    sed -i 's/setenv bootargs/& rootflags=subvol=@/' $TMPDIR/root/boot/boot.txt
+        #    $NSPAWN $TMPDIR/root mkimage -A arm -O linux -T script -C none -n "U-Boot boot script" -d /boot/boot.txt /boot/boot.scr
         fi
 
     fi
