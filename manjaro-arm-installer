@@ -219,7 +219,7 @@ create_install() {
         echo "LABEL=ROOT_MNJRO / btrfs  subvol=@,compress=zstd,defaults,noatime  0  0" >> $TMPDIR/root/etc/fstab
         echo "LABEL=ROOT_MNJRO /home btrfs  subvol=@home,compress=zstd,defaults,noatime  0  0" >> $TMPDIR/root/etc/fstab
         sed -i '/^MODULES/{s/)/ btrfs)/}' $TMPDIR/root/etc/mkinitcpio.conf
-        $NSPAWN $TMPDIR/root mkinitcpio -P
+        $NSPAWN $TMPDIR/root mkinitcpio -P 1> /dev/null 2>&1
         if [ -f $TMPDIR/root/boot/extlinux/extlinux.conf ]; then
             sed -i 's/APPEND/& rootflags=subvol=@/' $TMPDIR/root/boot/extlinux/extlinux.conf
         elif [ -f $TMPDIR/root/boot/boot.ini ]; then
