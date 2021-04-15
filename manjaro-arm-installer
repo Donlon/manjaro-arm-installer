@@ -327,9 +327,7 @@ prepare_card () {
 cleanup () {
     msg "Writing bootloader and cleaning up after install..."
     # Move boot files
-    if [[ "$FSTYPE" != "btrfs" ]]; then
     mv $TMPDIR/root/boot/* $TMPDIR/boot
-    fi
     # Flash bootloader
     case "$DEVICE" in
     oc2)
@@ -459,7 +457,7 @@ fi
 if [ ! -z "$EDITION" ]; then
 	USER=$(dialog --clear --title "Manjaro ARM Installer" \
 	--inputbox "Enter the username you want:
-(usernames must be all lowercase and first character may not be a number)" 10 75 \
+(usernames must be all lowercase and first character may not be a number)" 10 90 \
 	3>&1 1>&2 2>&3 3>&-)
     if [[ "$USER" =~ [A-Z] ]] || [[ "$USER" =~ ^[0-9] ]] || [[ "$USER" == *['!'@#\$%^\&*()_+]* ]]; then
     clear
@@ -582,7 +580,7 @@ fi
 
 if [ ! -z "$SDCARD" ]; then
     FSTYPE=$(dialog --clear --title "Manjaro ARM Installer" \
-        --menu "Choose a filesystem:" 10 75 10 \
+        --menu "Choose a filesystem:" 10 90 10 \
         "ext4"       "Regular ext4 filesystem" \
         "btrfs"      "Uses btrfs for root partition and makes / and /home subvolumes" \
         3>&1 1>&2 2>&3 3>&-) 
@@ -594,7 +592,7 @@ fi
 
 if [[ "$DEVICE" = "pbpro" ]] && [[ "$FSTYPE" != "btrfs" ]]; then
 	CRYPT=$(dialog --clear --title "Manjaro ARM Installer" \
-		--menu "[Experimental!] Do you want encryption on root partition?" 10 75 10 \
+		--menu "[Experimental!] Do you want encryption on root partition?" 10 90 10 \
 		"yes"		"Yes, please" \
 		"no"		"No, thanks" \
 		3>&1 1>&2 2>&3 3>&-)
@@ -683,6 +681,7 @@ if [ ! -z "$HOSTNAME" ]; then
     Device = $DEVICE
     Edition = $EDITION
     Username = $USER
+    Full Username = $FULLNAME
     Additional usergroups = $USERGROUPS
     Password for $USER = (password hidden)
     Password for root = (password hidden)
