@@ -19,12 +19,13 @@ This script is "interactive". Meaning that it asks you questions when run to cus
 * dosfstools
 * polkit
 * btrfs-progs (for btrfs filesystem support)
+* cryptsetup (for encryption support)
 
-## Installing and using from Manjaro x64 repositories:
+## Installing and using from Manjaro (x64 and ARM) repositories:
 To use this script, please make sure that the following is correct:
 
-* an **empty** SD/eMMC card with at least 8 GB storage is plugged in, but not mounted.
-* that your user account has `sudo` rights.
+* An SD/eMMC card with at least 8 GB storage is plugged in, but not mounted. This Script **will** remove everything on it.
+* That your user account has `sudo` rights.
 
 Then install the `manjaro-arm-installer` package with:
 ```
@@ -34,18 +35,13 @@ Then reboot. You can now launch the installer with:
 ```
 sudo bash manjaro-arm-installer
 ```
-Or with encryption support:
-*Warning! Encryption support is experimental and only Pinebook Pro is supported at this time!*
-```
-sudo export CRYPT="y" && sudo bash manjaro-arm-installer
-```
-It will ask the crypt password twice (first to create it, the second one to open the device)
+
 
 ## Installing and using from gitlab:
 To use this script, please make sure that the following is correct:
 
-* an **empty** SD/eMMC card with at least 8 GB storage is plugged in, but not mounted.
-* that your user account has `sudo` rights.
+* An SD/eMMC card with at least 8 GB storage is plugged in, but not mounted. This Script **will** remove everything on it.
+* That your user account has `sudo` rights.
 
 Then use this to get it:
 ```
@@ -59,13 +55,13 @@ sudo bash ./manjaro-arm-installer
 * Because `dialog` is weird, the script needs to be run in `bash`.
 
 ## Supported Devices:
-* Raspberry Pi 4 (and 3)
+* Raspberry Pi 4/400/3+/3
 * Pinebook Pro
 * RockPro64
 * Rock Pi 4B
-* Rock Pi 4C (new)
+* Rock Pi 4C
 * Odroid N2
-* Odroid N2+ (new)
+* Odroid N2+
 * Odroid C4
 * Odroid C2
 * Pinebook
