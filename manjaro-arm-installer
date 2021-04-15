@@ -1,7 +1,7 @@
 #! /bin/bash
 
 # *****************************
-#       Version 1.3.9
+#       Version 1.4.0
 # *****************************
 
 # Set globals
@@ -36,6 +36,7 @@ FSTYPE=""
 TIMEZONE=""
 LOCALE=""
 HOSTNAME=""
+CRYPT=""
 
 # check if root
 if [ "$EUID" -ne 0 ]; then
@@ -48,7 +49,7 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 # Sanity checks for dependencies
-declare -a DEPENDENCIES=("git" "parted" "systemd-nspawn" "wget" "dialog" "bsdtar" "openssl" "awk" "btrfs" "mkfs.vfat" "mkfs.btrfs")
+declare -a DEPENDENCIES=("git" "parted" "systemd-nspawn" "wget" "dialog" "bsdtar" "openssl" "awk" "btrfs" "mkfs.vfat" "mkfs.btrfs" "cryptsetup")
 
 for i in "${DEPENDENCIES[@]}"; do
   if ! [[ -f "/bin/$i" || -f "/sbin/$i" || -f "/usr/bin/$i" || -f "/usr/sbin/$i" ]] ; then
@@ -236,7 +237,9 @@ create_install() {
     fi
 
     
-    [ ! -z "$CRYPT" ] && tweakinitrd_crypt
+    if [[ "$CRYPT" = "yes" ]]; then
+    tweakinitrd_crypt
+    fi
     
     info "Cleaning install for unwanted files..."
     umount $TMPDIR/root/var/cache/pacman/pkg
@@ -262,6 +265,11 @@ prepare_card () {
         # Create partitions
         #Clear first 32mb
         dd if=/dev/zero of=${SDCARD} bs=1M count=32 1> /dev/null 2>&1
+        #remove previous partitions
+        for v_partition in $(parted -s $SDCARD print|awk '/^ / {print $1}')
+		do
+			parted -s $SDCARD rm ${v_partition} 1> /dev/null 2>&1
+		done
         #partition with boot and root
         parted -s $SDCARD mklabel msdos 1> /dev/null 2>&1
         parted -s $SDCARD mkpart primary fat32 32M 256M 1> /dev/null 2>&1
@@ -274,14 +282,7 @@ prepare_card () {
                 parted -s $SDCARD mkpart primary btrfs "${END_SECTOR}s" 100% 1> /dev/null 2>&1
                 partprobe $SDCARD 1> /dev/null 2>&1
                 mkfs.vfat "${SDCARD}${SDDEV}1" -n BOOT_MNJRO 1> /dev/null 2>&1
-
-                if [ -z "$CRYPT" ]; then
-                    mkfs.btrfs -m single -L ROOT_MNJRO -f "${SDCARD}${SDDEV}2" 1> /dev/null 2>&1
-                else
-                    cryptsetup luksFormat -q "${SDCARD}${SDDEV}2"
-                    cryptsetup open "${SDCARD}${SDDEV}2" ROOT_MNJRO
-                    mkfs.btrfs -m single -f /dev/mapper/ROOT_MNJRO 1> /dev/null 2>&1
-                fi
+				mkfs.btrfs -m single -L ROOT_MNJRO -f "${SDCARD}${SDDEV}2" 1> /dev/null 2>&1
 
                 mkdir -p $TMPDIR/root
                 mkdir -p $TMPDIR/boot
@@ -294,20 +295,18 @@ prepare_card () {
                 mkdir -p $TMPDIR/root/home
                 mount -o compress=zstd,subvol=@home "${SDCARD}${SDDEV}2" $TMPDIR/root/home
                 mount ${SDCARD}${SDDEV}1 $TMPDIR/boot
-                if [ ! -z "$CRYPT" ]; then
-                    [ ! -e /dev/mapper/ROOT_MNJRO ] && cryptsetup open "${SDCARD}${SDDEV}2" ROOT_MNJRO
-                    mount /dev/mapper/ROOT_MNJRO $TMPDIR/root
-                fi
                 ;;
             ext4)
                 parted -s $SDCARD mkpart primary ext4 "${END_SECTOR}s" 100% 1> /dev/null 2>&1
                 partprobe $SDCARD 1> /dev/null 2>&1
                 mkfs.vfat "${SDCARD}${SDDEV}1" -n BOOT_MNJRO 1> /dev/null 2>&1
 
-                if [ -z "$CRYPT" ]; then
+                if [[ "$CRYPT" != "yes" ]]; then
                     mkfs.ext4 -O ^metadata_csum,^64bit "${SDCARD}${SDDEV}2" -L ROOT_MNJRO 1> /dev/null 2>&1
                 else
+					info "Create encryption password:"
                     cryptsetup luksFormat -q "${SDCARD}${SDDEV}2"
+                    info "Confirm encryption password:"
                     cryptsetup open "${SDCARD}${SDDEV}2" ROOT_MNJRO
                     mkfs.ext4 -O ^metadata_csum,^64bit /dev/mapper/ROOT_MNJRO 1> /dev/null 2>&1
                 fi
@@ -315,7 +314,7 @@ prepare_card () {
                 mkdir -p $TMPDIR/root
                 mkdir -p $TMPDIR/boot
                 mount ${SDCARD}${SDDEV}1 $TMPDIR/boot
-                if [ -z "$CRYPT" ]; then
+                if [[ "$CRYPT" != "yes" ]]; then
                     mount ${SDCARD}${SDDEV}2 $TMPDIR/root
                 else
                     [ ! -e /dev/mapper/ROOT_MNJRO ] && cryptsetup open "${SDCARD}${SDDEV}2" ROOT_MNJRO
@@ -354,16 +353,19 @@ cleanup () {
         ;;
     esac
 
-	[ ! -z "$CRYPT" ] && post_crypt
+	if [[ "$CRYPT" = "yes" ]]; then
+	post_crypt
+	fi
     
     #clean up
     if [[ "$FSTYPE" = "btrfs" ]]; then
         umount $TMPDIR/root/home
         umount $TMPDIR/root
+        umount $TMPDIR/boot
     else
         umount $TMPDIR/root
         umount $TMPDIR/boot
-		if [ ! -z "$CRYPT" ]; then
+		if [[ "$CRYPT" = "yes" ]]; then
 			cryptsetup close /dev/mapper/ROOT_MNJRO
 		fi
     fi
@@ -376,7 +378,6 @@ tweakinitrd_crypt () {
     case "$DEVICE" in
     pbpro)
       # Use the proper mkinitcpio.
-      # NOTE: I've tried to modify only the HOOKS but it seems some kernel modules are required for the display to show stuff
       cat << EOF > ${TMPDIR}/root/etc/mkinitcpio.conf
 MODULES=(panfrost rockchipdrm drm_kms_helper hantro_vpu analogix_dp rockchip_rga panel_simple arc_uart cw2015_battery i2c-hid iscsi_boot_sysfs jsm pwm_bl uhid)
 BINARIES=()
@@ -399,7 +400,8 @@ post_crypt () {
     case "$DEVICE" in
     pbpro)
       # NOTE: I've tried to only modify the cryptdevice and root parameters but bootsplash and console=ttyS2 prevents to show the password prompt
-      sed -i -e "s!APPEND.*!APPEND initrd=/initramfs-linux.img console=tty1 cryptdevice=UUID=${UUID}:ROOT_MNJRO root=/dev/mapper/ROOT_MNJRO rw rootwait video=eDP-1:1920x1080@60 video=HDMI-A-1:1920x1080@60!g" ${TMPDIR}/boot/extlinux/extlinux.conf
+      # TODO: Need to add plymouth support
+      sed -i -e "s!APPEND.*!APPEND initrd=/initramfs-linux.img console=tty1 cryptdevice=UUID=${UUID}:ROOT_MNJRO root=/dev/mapper/ROOT_MNJRO rw rootwait!g" ${TMPDIR}/boot/extlinux/extlinux.conf
       ;;
     esac
 
@@ -410,7 +412,7 @@ post_crypt () {
 # Using Dialog to ask for user input for variables
 DEVICE=$(dialog --clear --title "Manjaro ARM Installer" \
         --menu "Choose a device:" 20 75 10 \
-        "rpi4"          "Raspberry Pi 4 (and 3)" \
+        "rpi4"          "Raspberry Pi 4/400/3+/3" \
         "pbpro"         "Pinebook Pro" \
         "rockpro64"     "RockPro64" \
         "rockpi4b"      "Rock Pi 4B" \
@@ -457,7 +459,7 @@ fi
 if [ ! -z "$EDITION" ]; then
 	USER=$(dialog --clear --title "Manjaro ARM Installer" \
 	--inputbox "Enter the username you want:
-(usernames must be all lowercase and first character may not be a number)" 8 50 \
+(usernames must be all lowercase and first character may not be a number)" 10 75 \
 	3>&1 1>&2 2>&3 3>&-)
     if [[ "$USER" =~ [A-Z] ]] || [[ "$USER" =~ ^[0-9] ]] || [[ "$USER" == *['!'@#\$%^\&*()_+]* ]]; then
     clear
@@ -473,7 +475,7 @@ if [ ! -z "$USER" ]
 then
 USERGROUPS=$(dialog --clear --title "Manjaro ARM Installer" \
     --inputbox "Enter additional groups for $USER in a comma seperated list: (empty if none)
-(default: wheel,sys,audio,input,video,storage,lp,network,users,power)" 8 90 \
+(default: wheel,sys,audio,input,video,storage,lp,network,users,power)" 10 90 \
         3>&1 1>&2 2>&3 3>&- \
 	)
 else 
@@ -580,7 +582,7 @@ fi
 
 if [ ! -z "$SDCARD" ]; then
     FSTYPE=$(dialog --clear --title "Manjaro ARM Installer" \
-        --menu "Choose a filesystem:" 20 75 10 \
+        --menu "Choose a filesystem:" 10 75 10 \
         "ext4"       "Regular ext4 filesystem" \
         "btrfs"      "Uses btrfs for root partition and makes / and /home subvolumes" \
         3>&1 1>&2 2>&3 3>&-) 
@@ -588,6 +590,14 @@ if [ ! -z "$SDCARD" ]; then
 else 
 	clear
 	exit 1
+fi
+
+if [[ "$DEVICE" = "pbpro" ]] && [[ "$FSTYPE" != "btrfs" ]]; then
+	CRYPT=$(dialog --clear --title "Manjaro ARM Installer" \
+		--menu "[Experimental!] Do you want encryption on root partition?" 10 75 10 \
+		"yes"		"Yes, please" \
+		"no"		"No, thanks" \
+		3>&1 1>&2 2>&3 3>&-)
 fi
 
 if [ ! -z "$FSTYPE" ]; then
@@ -678,6 +688,7 @@ if [ ! -z "$HOSTNAME" ]; then
     Password for root = (password hidden)
     SDCard/eMMC/USB = $SDCARD
     Filesystem = $FSTYPE
+    Encryption (only on select devices) = $CRYPT
     Timezone = $TIMEZONE
     Locale = $LOCALE
     TTY Keyboard layout = $CLIKEYMAP
