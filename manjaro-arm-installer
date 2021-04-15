@@ -355,6 +355,29 @@ cleanup () {
 	post_crypt
 	fi
     
+    # edit boot files and fstab
+    # set UUID for boot partition in fstab
+    BOOT_PARTUUID=$(lsblk -o NAME,PARTUUID | grep ${DEV_NAME}${SDDEV}1 | awk '{print $2}')
+    sed -i "s/LABEL=BOOT_MNJRO/PARTUUID=$BOOT_PARTUUID/g" $TMPDIR/root/etc/fstab
+    echo "Set boot partition to $BOOT_PARTUUID in /etc/fstab..."
+    
+	# Change boot script and fstab to root partition UUID
+    ROOT_PARTUUID=$(lsblk -o NAME,PARTUUID | grep ${DEV_NAME}${SDDEV}2 | awk '{print $2}')
+    if [ -f $TMPDIR/boot/extlinux/extlinux.conf ]; then
+    sed -i "s/LABEL=ROOT_MNJRO/PARTUUID=$ROOT_PARTUUID/g" $TMPDIR/boot/extlinux/extlinux.conf
+        elif [ -f $TMPDIR/boot/boot.ini ]; then
+        sed -i "s/LABEL=ROOT_MNJRO/PARTUUID=$ROOT_PARTUUID/g" $TMPDIR/boot/boot.ini
+        elif [ -f $TMPDIR/boot/uEnv.ini ]; then
+        sed -i "s/LABEL=ROOT_MNJRO/PARTUUID=$ROOT_PARTUUID/g" $TMPDIR/boot/uEnv.ini
+        elif [ -f $TMPDIR/boot/cmdline.txt ]; then
+        sed -i "s/LABEL=ROOT_MNJRO/PARTUUID=$ROOT_PARTUUID/g" $TMPDIR/boot/cmdline.txt
+	fi
+	echo "Set root partition to $ROOT_PARTUUID in the relevant boot script..."
+    sed -i "s/LABEL=ROOT_MNJRO/PARTUUID=$ROOT_PARTUUID/g" $TMPDIR/root/etc/fstab
+    echo "Set root partition to $ROOT_PARTUUID in /etc/fstab if applicable..."
+    sync
+
+
     #clean up
     if [[ "$FSTYPE" = "btrfs" ]]; then
         umount $TMPDIR/root/home
@@ -593,8 +616,8 @@ fi
 if [[ "$DEVICE" = "pbpro" ]] && [[ "$FSTYPE" != "btrfs" ]]; then
 	CRYPT=$(dialog --clear --title "Manjaro ARM Installer" \
 		--menu "[Experimental!] Do you want encryption on root partition?" 10 90 10 \
-		"yes"		"Yes, please" \
 		"no"		"No, thanks" \
+		"yes"		"Yes, please" \
 		3>&1 1>&2 2>&3 3>&-)
 fi
 
@@ -692,7 +715,7 @@ if [ ! -z "$HOSTNAME" ]; then
     Locale = $LOCALE
     TTY Keyboard layout = $CLIKEYMAP
     X11 Keyboard layout = $X11KEYMAP
-    Hostname = $HOSTNAME" 20 70 \
+    Hostname = $HOSTNAME" 25 70 \
     3>&1 1>&2 2>&3 3>&-
 else
 	clear
