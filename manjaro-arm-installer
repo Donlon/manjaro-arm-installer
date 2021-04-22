@@ -115,7 +115,7 @@ installer_getarmprofiles () {
 
 create_install() {
     msg "Creating install for $DEVICE..."
-    info "Used device is ${SDCARD}${SDDEV}"
+    info "Used device is ${SDCARD}"
     
     # fetch and extract rootfs
     info "Downloading latest $ARCH rootfs..."
