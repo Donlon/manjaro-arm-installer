@@ -123,7 +123,7 @@ create_install() {
     if [ -f Manjaro-ARM-$ARCH-latest.tar.gz* ]; then
     rm Manjaro-ARM_$ARCH-latest.tar.gz*
     fi
-    wget -q --show-progress --progress=bar:force:noscroll https://osdn.net/projects/manjaro-arm/storage/.rootfs/Manjaro-ARM-$ARCH-latest.tar.gz
+    wget -q --show-progress --progress=bar:force:noscroll https://github.com/manjaro-arm/rootfs/releases/latest/download/Manjaro-ARM-$ARCH-latest.tar.gz
     
     info "Extracting $ARCH rootfs..."
     bsdtar -xpf $TMPDIR/Manjaro-ARM-$ARCH-latest.tar.gz -C $TMPDIR/root
