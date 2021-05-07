@@ -1,7 +1,7 @@
 #! /bin/bash
 
 # *****************************
-#       Version 1.4.0
+#       Version 1.4.1
 # *****************************
 
 # Set globals
@@ -621,6 +621,11 @@ if [[ "$DEVICE" = "pbpro" ]] && [[ "$FSTYPE" != "btrfs" ]]; then
 		3>&1 1>&2 2>&3 3>&-)
 fi
 
+if [[ -d /dev/mapper/ROOT_MNJRO ]] && [[ "$CRYPT" = "yes" ]]; then
+	clear
+	exit 2
+fi
+
 if [ ! -z "$FSTYPE" ]; then
 	let i=0
 	W=()
@@ -726,6 +731,7 @@ response=$?
 case $response in
    0) clear; msg "Proceeding....";;
    1) clear; msg "Installation aborted...."; exit 1;;
+   2) clear; msg "Installation not possible from an encrypted system..."; exit 1;;
    255) clear; msg "Installation aborted..."; exit 1;;
 esac
 
