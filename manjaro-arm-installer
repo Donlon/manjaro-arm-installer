@@ -168,10 +168,10 @@ create_install() {
     echo "$ROOTPASSWORD" > $TMPDIR/rootpassword
 
     info "Setting password for root ..."
-    $NSPAWN $TMPDIR/root awk -i inplace -F: "BEGIN {OFS=FS;} \$1 == \"root\" {\$2=\"$(openssl passwd -1 $(cat $TMPDIR/rootpassword))\"} 1" /etc/shadow 1> /dev/null 2>&1
+    $NSPAWN $TMPDIR/root awk -i inplace -F: "BEGIN {OFS=FS;} \$1 == \"root\" {\$2=\"$(openssl passwd -6 $(cat $TMPDIR/rootpassword))\"} 1" /etc/shadow 1> /dev/null 2>&1
 
     info "Adding user..."
-    $NSPAWN $TMPDIR/root useradd -m -G wheel,sys,audio,input,video,storage,lp,network,users,power -p $(openssl passwd -1 $(cat $TMPDIR/password)) -s /bin/bash $(cat $TMPDIR/user) 1> /dev/null 2>&1
+    $NSPAWN $TMPDIR/root useradd -m -G wheel,sys,audio,input,video,storage,lp,network,users,power -p $(openssl passwd -6 $(cat $TMPDIR/password)) -s /bin/bash $(cat $TMPDIR/user) 1> /dev/null 2>&1
     $NSPAWN $TMPDIR/root usermod -aG $USERGROUPS $(cat $TMPDIR/user) 1> /dev/null 2>&1
     $NSPAWN $TMPDIR/root chfn -f "$FULLNAME" $(cat $TMPDIR/user) 1> /dev/null 2>&1
     
