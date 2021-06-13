@@ -85,6 +85,8 @@ sudo bash ./manjaro-arm-installer
 * LXQT (full LXQT desktop with some qt apps)
 * Mate (full mate desktop with apps)
 * Server (minimal install with LAMP and Docker)
+* Gnome (full Gnome desktop with apps)
+* Budgie (full Budge desktop with apps) (EXPERIMENTAL)
 
 ## Other notes:
 This script is available in the **Manjaro** repository and can be installed with `sudo pacman -S manjaro-arm-installer`.
