@@ -5,6 +5,7 @@
 # *****************************
 
 # Set globals
+VERSION="1.4.3"
 TMPDIR=/var/tmp/manjaro-arm-installer
 ARCH='aarch64'
 CARCH=$(uname -m)
@@ -441,7 +442,7 @@ post_crypt () {
 }
 
 # Using Dialog to ask for user input for variables
-DEVICE=$(dialog --clear --title "Manjaro ARM Installer" \
+DEVICE=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
         --menu "Choose a device:" 20 75 10 \
         "rpi4"          "Raspberry Pi 4/400/3+/3" \
         "pbpro"         "Pinebook Pro" \
