@@ -1,11 +1,9 @@
 #! /bin/bash
 
-# *****************************
-#       Version 1.4.3
-# *****************************
-
 # Set globals
+# *****************************
 VERSION="1.4.3"
+# *****************************
 TMPDIR=/var/tmp/manjaro-arm-installer
 ARCH='aarch64'
 CARCH=$(uname -m)
@@ -469,7 +467,7 @@ DEVICE=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
 
 #The if statement makes sure that the user has put in something in the previous prompt. If not (left blank or pressed cancel) the script will end
 if [ ! -z "$DEVICE" ]; then
-    EDITION=$(dialog --clear --title "Manjaro ARM Installer" \
+    EDITION=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
         --menu "Choose an edition:" 20 75 10 \
         "minimal"       "Minimal Edition            (only CLI)" \
         "kde-plasma"    "Full KDE/Plasma Desktop    (full featured)" \
@@ -490,7 +488,7 @@ fi
 
 
 if [ ! -z "$EDITION" ]; then
-	USER=$(dialog --clear --title "Manjaro ARM Installer" \
+	USER=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
 	--inputbox "Enter the username you want:
 (usernames must be all lowercase and first character may not be a number)" 10 90 \
 	3>&1 1>&2 2>&3 3>&-)
@@ -506,7 +504,7 @@ fi
 
 if [ ! -z "$USER" ]
 then
-USERGROUPS=$(dialog --clear --title "Manjaro ARM Installer" \
+USERGROUPS=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
     --inputbox "Enter additional groups for $USER in a comma seperated list: (empty if none)
 (default: wheel,sys,audio,input,video,storage,lp,network,users,power)" 10 90 \
         3>&1 1>&2 2>&3 3>&- \
@@ -518,7 +516,7 @@ fi
 
 if [ ! -z "$USER" ]
 then
-FULLNAME=$(dialog --clear --title "Manjaro ARM Installer" \
+FULLNAME=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
     --inputbox "Enter desired Full Name for $USER:" 8 50 \
         3>&1 1>&2 2>&3 3>&- \
 	)
@@ -529,7 +527,7 @@ fi
 
 
 if [ ! -z "$FULLNAME" ]; then
-	PASSWORD=$(dialog --clear --title "Manjaro ARM Installer" \
+	PASSWORD=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
 	--insecure --passwordbox "Enter new Password for $USER:" 8 50 \
 	3>&1 1>&2 2>&3 3>&- \
 	)
@@ -539,7 +537,7 @@ else
 fi
 
 if [ ! -z "$PASSWORD" ]; then
-	CONFIRMPASSWORD=$(dialog --clear --title "Manjaro ARM Installer" \
+	CONFIRMPASSWORD=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
 	--insecure --passwordbox "Confirm new Password for $USER:" 8 50 \
 	3>&1 1>&2 2>&3 3>&- \
 	)
@@ -555,7 +553,7 @@ if [[ "$PASSWORD" != "$CONFIRMPASSWORD" ]]; then
 fi
 
 if [ ! -z "$CONFIRMPASSWORD" ]; then
-	ROOTPASSWORD=$(dialog --clear --title "Manjaro ARM Installer" \
+	ROOTPASSWORD=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
 	--insecure --passwordbox "Enter new Root Password:" 8 50 \
 	3>&1 1>&2 2>&3 3>&- \
 	)
@@ -565,7 +563,7 @@ else
 fi
 
 if [ ! -z "$ROOTPASSWORD" ]; then
-	CONFIRMROOTPASSWORD=$(dialog --clear --title "Manjaro ARM Installer" \
+	CONFIRMROOTPASSWORD=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
 	--insecure --passwordbox "Confirm new Root Password:" 8 50 \
 	3>&1 1>&2 2>&3 3>&- \
 	)
@@ -590,7 +588,7 @@ then
 		let i=$i+1
 		W+=($line "")
 	done < <( lsblk -dn -o NAME )
-	SDCARD=$(dialog --title "Manjaro ARM Installer" \
+	SDCARD=$(dialog --title "Manjaro ARM Installer v${VERSION}" \
 	--menu "Choose your SDCard/eMMC/USB - Be sure the correct drive is selected! 
 WARNING! This WILL destroy the data on it!" 20 50 10 \
 	"${W[@]}" 3>&2 2>&1 1>&3)
@@ -614,7 +612,7 @@ else
 fi
 
 if [ ! -z "$SDCARD" ]; then
-    FSTYPE=$(dialog --clear --title "Manjaro ARM Installer" \
+    FSTYPE=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
         --menu "Choose a filesystem:" 10 90 10 \
         "ext4"       "Regular ext4 filesystem" \
         "btrfs"      "Uses btrfs for root partition and makes / and /home subvolumes" \
@@ -626,7 +624,7 @@ else
 fi
 
 if [[ "$DEVICE" = "pbpro" ]] && [[ "$FSTYPE" != "btrfs" ]]; then
-	CRYPT=$(dialog --clear --title "Manjaro ARM Installer" \
+	CRYPT=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
 		--menu "[Experimental!] Do you want encryption on root partition?" 10 90 10 \
 		"no"		"No, thanks" \
 		"yes"		"Yes, please" \
@@ -645,7 +643,7 @@ if [ ! -z "$FSTYPE" ]; then
 		let i=$i+1
 		W+=($line "")
 	done < <( timedatectl list-timezones )
-	TIMEZONE=$(dialog --clear --title "Manjaro ARM Installer" \
+	TIMEZONE=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
 	--menu "Choose your timezone!" 20 50 15 \
 	"${W[@]}" 3>&1 1>&2 2>&3 3>&- \
 	)
@@ -662,7 +660,7 @@ if [ ! -z "$TIMEZONE" ]; then
 		let i=$i+1
 		W+=($line "")
 	done < <( cat /etc/locale.gen | grep "UTF-8" | tail -n +2 | sed -e 's/^#*//' | awk '{print $1}' )
-	LOCALE=$(dialog --clear --title "Manjaro ARM Installer" \
+	LOCALE=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
 		--menu "Choose your locale!" 20 50 15 \
 		"${W[@]}" 3>&1 1>&2 2>&3 3>&- \
 		)
@@ -678,7 +676,7 @@ if [ ! -z "$LOCALE" ]; then
 		let i=$i+1
 		W+=($line "")
 	done < <( localectl list-keymaps )
-	CLIKEYMAP=$(dialog --clear --title "Manjaro ARM Installer" \
+	CLIKEYMAP=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
 		--menu "Choose your TTY keyboard layout:" 20 50 15 \
 		"${W[@]}" 3>&1 1>&2 2>&3 3>&- \
 	)
@@ -695,7 +693,7 @@ if [ ! -z "$CLIKEYMAP" ]; then
 		let i=$i+1
 		W+=($line "")
 	done < <( localectl list-x11-keymap-layouts )
-	X11KEYMAP=$(dialog --clear --title "Manjaro ARM Installer" \
+	X11KEYMAP=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
 		--menu "Choose your X11 keyboard layout:" 20 50 15 \
 		"${W[@]}" 3>&1 1>&2 2>&3 3>&- \
 	)
@@ -706,7 +704,7 @@ fi
 fi
 
 if [ ! -z "$CLIKEYMAP" ]; then
-	HOSTNAME=$(dialog --clear --title "Manjaro ARM Installer" \
+	HOSTNAME=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
 	--inputbox "Enter desired hostname for this system:" 8 50 \
 	3>&1 1>&2 2>&3 3>&- \
 	)
