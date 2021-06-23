@@ -2,7 +2,7 @@
 
 # Set globals
 # *****************************
-VERSION="1.4.3"
+VERSION="1.4.4"
 # *****************************
 TMPDIR=/var/tmp/manjaro-arm-installer
 ARCH='aarch64'
@@ -271,7 +271,7 @@ prepare_card () {
 		done
         #partition with boot and root
         case "$DEVICE" in
-            oc2|on2|on2-plus|oc4|ohc4|vim1|vim2|vim3|gtking-pro|gsking-x|edgev|pinephone)
+            oc2|on2|on2-plus|oc4|ohc4|vim1|vim2|vim3|gtking-pro|gsking-x|edgev|rpi4|pinephone)
             parted -s $SDCARD mklabel msdos 1> /dev/null 2>&1
             ;;
             *)
