@@ -31,7 +31,7 @@ Then install the `manjaro-arm-installer` package with:
 ```
 sudo pacman -Syu manjaro-arm-installer
 ```
-Then reboot. You can now launch the installer with:
+Then reboot or run `sudo systemctl restart systemd-binfmt`. You can now launch the installer with:
 ```
 sudo bash manjaro-arm-installer
 ```
@@ -42,6 +42,7 @@ To use this script, please make sure that the following is correct:
 
 * An SD/eMMC card with at least 8 GB storage is plugged in, but not mounted. This Script **will** remove everything on it.
 * That your user account has `sudo` rights.
+* That you have rebooted or restarted the binfmt service with `sudo systemctl restart systemd-binfmt`.
 
 Then use this to get it:
 ```
