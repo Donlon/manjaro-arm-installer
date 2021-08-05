@@ -2,7 +2,7 @@
 
 # Set globals
 # *****************************
-VERSION="1.4.4"
+VERSION="1.4.5"
 # *****************************
 TMPDIR=/var/tmp/manjaro-arm-installer
 ARCH='aarch64'
@@ -207,11 +207,12 @@ create_install() {
     sed -i s/"enable systemd-resolved.service"/"#enable systemd-resolved.service"/ $TMPDIR/root/usr/lib/systemd/system-preset/90-systemd.preset
 
     echo "Correcting permissions from overlay..."
-    chown -R root:root $ROOTFS_IMG/rootfs_$ARCH/etc
-    chown -R root:root $ROOTFS_IMG/rootfs_$ARCH/usr/{local,share}
-    if [[ "$EDITION" != "minimal" && "$EDITION" != "server" ]]; then
-        chown root:polkitd $ROOTFS_IMG/rootfs_$ARCH/etc/polkit-1/rules.d
-        chown root:polkitd $ROOTFS_IMG/rootfs_$ARCH/usr/share/polkit-1/rules.d
+    chown -R root:root $TMPDIR/root/etc
+    chown -R root:root $TMPDIR/root/usr/{local,share}
+    if [[ -d $TMPDIR/root/etc/polkit-1/rules.d ]]; then
+        chown root:polkitd $TMPDIR/root/etc/polkit-1/rules.d
+    elif [[ -d $TMPDIR/root/usr/share/polkit-1/rules.d ]]; then
+        chown root:polkitd $TMPDIR/root/usr/share/polkit-1/rules.d
     elif [[ "$EDITION" = "cubocore" ]]; then
         cp $TMPDIR/root/usr/share/applications/corestuff.desktop $TMPDIR/root/etc/xdg/autostart/
     fi
@@ -268,9 +269,9 @@ prepare_card () {
         dd if=/dev/zero of=${SDCARD} bs=1M count=32 1> /dev/null 2>&1
         #remove previous partitions
         for v_partition in $(parted -s $SDCARD print|awk '/^ / {print $1}')
-		do
-			parted -s $SDCARD rm ${v_partition} 1> /dev/null 2>&1
-		done
+        do
+            parted -s $SDCARD rm ${v_partition} 1> /dev/null 2>&1
+        done
         #partition with boot and root
         case "$DEVICE" in
             oc2|on2|on2-plus|oc4|ohc4|vim1|vim2|vim3|gtking-pro|gsking-x|edgev|rpi4|pinephone)
@@ -290,7 +291,7 @@ prepare_card () {
                 parted -s $SDCARD mkpart primary btrfs "${END_SECTOR}s" 100% 1> /dev/null 2>&1
                 partprobe $SDCARD 1> /dev/null 2>&1
                 mkfs.vfat "${SDCARD}${SDDEV}1" -n BOOT_MNJRO 1> /dev/null 2>&1
-				mkfs.btrfs -m single -L ROOT_MNJRO -f "${SDCARD}${SDDEV}2" 1> /dev/null 2>&1
+                mkfs.btrfs -m single -L ROOT_MNJRO -f "${SDCARD}${SDDEV}2" 1> /dev/null 2>&1
 
                 mkdir -p $TMPDIR/root
                 mkdir -p $TMPDIR/boot
@@ -312,7 +313,7 @@ prepare_card () {
                 if [[ "$CRYPT" != "yes" ]]; then
                     mkfs.ext4 -O ^metadata_csum,^64bit "${SDCARD}${SDDEV}2" -L ROOT_MNJRO 1> /dev/null 2>&1
                 else
-					info "Create encryption password:"
+                    info "Create encryption password:"
                     cryptsetup luksFormat -q "${SDCARD}${SDDEV}2"
                     info "Confirm encryption password:"
                     cryptsetup open "${SDCARD}${SDDEV}2" ROOT_MNJRO
@@ -362,33 +363,38 @@ cleanup () {
         ;;
     esac
 
-	if [[ "$CRYPT" = "yes" ]]; then
-	post_crypt
-	fi
+    if [[ "$CRYPT" = "yes" ]]; then
+    post_crypt
+    fi
     
     # edit boot files and fstab
     # set UUID for boot partition in fstab
-    BOOT_PARTUUID=$(lsblk -o NAME,PARTUUID | grep ${DEV_NAME}${SDDEV}1 | awk '{print $2}')
+    BOOT_PARTUUID=$(lsblk -p -o NAME,PARTUUID | grep ${DEV_NAME}${SDDEV}1 | awk '{print $2}')
     sed -i "s/LABEL=BOOT_MNJRO/PARTUUID=$BOOT_PARTUUID/g" $TMPDIR/root/etc/fstab
     echo "Set boot partition to $BOOT_PARTUUID in /etc/fstab..."
     
-	# Change boot script and fstab to root partition UUID
-    ROOT_PARTUUID=$(lsblk -o NAME,PARTUUID | grep ${DEV_NAME}${SDDEV}2 | awk '{print $2}')
+    # Change boot script and fstab to root partition UUID
+    ROOT_PARTUUID=$(lsblk -p -o NAME,PARTUUID | grep ${DEV_NAME}${SDDEV}2 | awk '{print $2}')
+    echo "Set root partition to $ROOT_PARTUUID in the relevant boot script and /etc/fstab..."
     if [ -f $TMPDIR/boot/extlinux/extlinux.conf ]; then
     sed -i "s/LABEL=ROOT_MNJRO/PARTUUID=$ROOT_PARTUUID/g" $TMPDIR/boot/extlinux/extlinux.conf
+        elif [ -f $TMPDIR/boot/efi/extlinux/extlinux.conf ]; then
+            sed -i "s/LABEL=ROOT_MNJRO/PARTUUID=$ROOT_PART/g" $TMPDIR/boot/efi/extlinux/extlinux.conf
         elif [ -f $TMPDIR/boot/boot.ini ]; then
-        sed -i "s/LABEL=ROOT_MNJRO/PARTUUID=$ROOT_PARTUUID/g" $TMPDIR/boot/boot.ini
+            sed -i "s/LABEL=ROOT_MNJRO/PARTUUID=$ROOT_PARTUUID/g" $TMPDIR/boot/boot.ini
         elif [ -f $TMPDIR/boot/uEnv.ini ]; then
-        sed -i "s/LABEL=ROOT_MNJRO/PARTUUID=$ROOT_PARTUUID/g" $TMPDIR/boot/uEnv.ini
+            sed -i "s/LABEL=ROOT_MNJRO/PARTUUID=$ROOT_PARTUUID/g" $TMPDIR/boot/uEnv.ini
         elif [ -f $TMPDIR/boot/cmdline.txt ]; then
-        sed -i "s/LABEL=ROOT_MNJRO/PARTUUID=$ROOT_PARTUUID/g" $TMPDIR/boot/cmdline.txt
-	fi
-	echo "Set root partition to $ROOT_PARTUUID in the relevant boot script..."
-    sed -i "s/LABEL=ROOT_MNJRO/PARTUUID=$ROOT_PARTUUID/g" $TMPDIR/root/etc/fstab
-    echo "Set root partition to $ROOT_PARTUUID in /etc/fstab if applicable..."
+            sed -i "s/LABEL=ROOT_MNJRO/PARTUUID=$ROOT_PARTUUID/g" $TMPDIR/boot/cmdline.txt
+    fi
+    #sed -i "s/LABEL=ROOT_MNJRO/PARTUUID=$ROOT_PARTUUID/g" $TMPDIR/root/etc/fstab
     sync
 
-
+    if [[ "$FSTYPE" = "btrfs" ]]; then
+        sed -i "s/LABEL=ROOT_MNJRO/PARTUUID=$ROOT_PART/g" $TMPDIR/root/etc/fstab
+    else
+        echo "PARTUUID=$ROOT_PARTUUID   /   $FSTYPE     defaults    0   1" >> $TMPDIR/root/etc/fstab
+    fi
     #clean up
     if [[ "$FSTYPE" = "btrfs" ]]; then
         umount $TMPDIR/root/home
@@ -397,13 +403,13 @@ cleanup () {
     else
         umount $TMPDIR/root
         umount $TMPDIR/boot
-		if [[ "$CRYPT" = "yes" ]]; then
-			cryptsetup close /dev/mapper/ROOT_MNJRO
-		fi
+        if [[ "$CRYPT" = "yes" ]]; then
+            cryptsetup close /dev/mapper/ROOT_MNJRO
+        fi
     fi
-		partprobe $SDCARD 1> /dev/null 2>&1
-		
-		info "If you get an error stating 'failed to preserve ownership ... Operation not permitted', it's expected, since the boot partition is FAT32 and does not support ownership permissions..."
+
+    partprobe $SDCARD 1> /dev/null 2>&1
+    info "If you get an error stating 'failed to preserve ownership ... Operation not permitted', it's expected, since the boot partition is FAT32 and does not support ownership permissions..."
 }
 
 tweakinitrd_crypt () {
@@ -484,24 +490,24 @@ if [ ! -z "$DEVICE" ]; then
         3>&1 1>&2 2>&3 3>&-) 
 
 else 
-	clear
-	exit 1
+    clear
+    exit 1
 fi
 
 
 if [ ! -z "$EDITION" ]; then
-	USER=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
-	--inputbox "Enter the username you want:
+    USER=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
+    --inputbox "Enter the username you want:
 (usernames must be all lowercase and first character may not be a number)" 10 90 \
-	3>&1 1>&2 2>&3 3>&-)
+    3>&1 1>&2 2>&3 3>&-)
     if [[ "$USER" =~ [A-Z] ]] || [[ "$USER" =~ ^[0-9] ]] || [[ "$USER" == *['!'@#\$%^\&*()_+]* ]]; then
     clear
     msg "Configuration aborted! Username contained invalid characters."
     exit 1
     fi
 else 
-	clear
-	exit 1
+    clear
+    exit 1
 fi
 
 if [ ! -z "$USER" ]
@@ -510,10 +516,10 @@ USERGROUPS=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
     --inputbox "Enter additional groups for $USER in a comma seperated list: (empty if none)
 (default: wheel,sys,audio,input,video,storage,lp,network,users,power)" 10 90 \
         3>&1 1>&2 2>&3 3>&- \
-	)
+    )
 else 
-	clear
-	exit 1
+    clear
+    exit 1
 fi
 
 if [ ! -z "$USER" ]
@@ -521,7 +527,7 @@ then
 FULLNAME=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
     --inputbox "Enter desired Full Name for $USER:" 8 50 \
         3>&1 1>&2 2>&3 3>&- \
-	)
+    )
 else
     clear
     exit 1
@@ -529,88 +535,88 @@ fi
 
 
 if [ ! -z "$FULLNAME" ]; then
-	PASSWORD=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
-	--insecure --passwordbox "Enter new Password for $USER:" 8 50 \
-	3>&1 1>&2 2>&3 3>&- \
-	)
+    PASSWORD=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
+    --insecure --passwordbox "Enter new Password for $USER:" 8 50 \
+    3>&1 1>&2 2>&3 3>&- \
+    )
 else 
-	clear
-	exit 1
+    clear
+    exit 1
 fi
 
 if [ ! -z "$PASSWORD" ]; then
-	CONFIRMPASSWORD=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
-	--insecure --passwordbox "Confirm new Password for $USER:" 8 50 \
-	3>&1 1>&2 2>&3 3>&- \
-	)
+    CONFIRMPASSWORD=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
+    --insecure --passwordbox "Confirm new Password for $USER:" 8 50 \
+    3>&1 1>&2 2>&3 3>&- \
+    )
 else 
-	clear
-	exit 1
+    clear
+    exit 1
 fi
 
 if [[ "$PASSWORD" != "$CONFIRMPASSWORD" ]]; then
-	clear
-	msg "User passwords do not match! Please restart the installer and try again."
-	exit 1
+    clear
+    msg "User passwords do not match! Please restart the installer and try again."
+    exit 1
 fi
 
 if [ ! -z "$CONFIRMPASSWORD" ]; then
-	ROOTPASSWORD=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
-	--insecure --passwordbox "Enter new Root Password:" 8 50 \
-	3>&1 1>&2 2>&3 3>&- \
-	)
+    ROOTPASSWORD=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
+    --insecure --passwordbox "Enter new Root Password:" 8 50 \
+    3>&1 1>&2 2>&3 3>&- \
+    )
 else 
-	clear
-	exit 1
+    clear
+    exit 1
 fi
 
 if [ ! -z "$ROOTPASSWORD" ]; then
-	CONFIRMROOTPASSWORD=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
-	--insecure --passwordbox "Confirm new Root Password:" 8 50 \
-	3>&1 1>&2 2>&3 3>&- \
-	)
+    CONFIRMROOTPASSWORD=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
+    --insecure --passwordbox "Confirm new Root Password:" 8 50 \
+    3>&1 1>&2 2>&3 3>&- \
+    )
 else 
-	clear
-	exit 1
+    clear
+    exit 1
 fi
 
 if [[ "$ROOTPASSWORD" != "$CONFIRMROOTPASSWORD" ]]; then
-	clear
-	msg "Root passwords do not match! Please restart the installer and try again."
-	exit 1
+    clear
+    msg "Root passwords do not match! Please restart the installer and try again."
+    exit 1
 fi
 
 if [ ! -z "$CONFIRMROOTPASSWORD" ]
 then
 
 # simple command to put the results of lsblk (just the names of the devices) into an array and make that array populate the options	
-	let i=0
-	W=()
-	while read -r line; do
-		let i=$i+1
-		W+=($line "")
-	done < <( lsblk -dn -o NAME )
-	SDCARD=$(dialog --title "Manjaro ARM Installer v${VERSION}" \
-	--menu "Choose your SDCard/eMMC/USB - Be sure the correct drive is selected! 
+    let i=0
+    W=()
+    while read -r line; do
+        let i=$i+1
+        W+=($line "")
+    done < <( lsblk -dn -o NAME )
+    SDCARD=$(dialog --title "Manjaro ARM Installer v${VERSION}" \
+    --menu "Choose your SDCard/eMMC/USB - Be sure the correct drive is selected! 
 WARNING! This WILL destroy the data on it!" 20 50 10 \
-	"${W[@]}" 3>&2 2>&1 1>&3)
+    "${W[@]}" 3>&2 2>&1 1>&3)
 
 # add /dev/ to the selected option above
-	DEV_NAME=$SDCARD
-	SDCARD=/dev/$SDCARD
-	SDTYP=${SDCARD:5:2}
+    DEV_NAME=$SDCARD
+    SDCARD=/dev/$SDCARD
+    SDTYP=${SDCARD:5:2}
 else 
-	clear
-	exit 1
+    clear
+    exit 1
 fi
 
 if [[ "$SDTYP" = "sd" ]]; then
-	SDDEV=""
+    SDDEV=""
 elif [[ "$SDTYP" = "mm" ]]; then
-	SDDEV="p"
+    SDDEV="p"
 else 
-	clear
-	exit 1
+    clear
+    exit 1
 fi
 
 if [ ! -z "$SDCARD" ]; then
@@ -621,102 +627,102 @@ if [ ! -z "$SDCARD" ]; then
         3>&1 1>&2 2>&3 3>&-) 
 
 else 
-	clear
-	exit 1
+    clear
+    exit 1
 fi
 
 if [[ "$DEVICE" = "pbpro" ]] && [[ "$FSTYPE" != "btrfs" ]]; then
-	CRYPT=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
-		--menu "[Experimental!] Do you want encryption on root partition?" 10 90 10 \
-		"no"		"No, thanks" \
-		"yes"		"Yes, please" \
-		3>&1 1>&2 2>&3 3>&-)
+    CRYPT=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
+        --menu "[Experimental!] Do you want encryption on root partition?" 10 90 10 \
+        "no"          "No, thanks" \
+        "yes"         "Yes, please" \
+        3>&1 1>&2 2>&3 3>&-)
 fi
 
 if [[ -d /dev/mapper/ROOT_MNJRO ]] && [[ "$CRYPT" = "yes" ]]; then
-	clear
-	exit 2
+    clear
+    exit 2
 fi
 
 if [ ! -z "$FSTYPE" ]; then
-	let i=0
-	W=()
-	while read -r line; do
-		let i=$i+1
-		W+=($line "")
-	done < <( timedatectl list-timezones )
-	TIMEZONE=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
-	--menu "Choose your timezone!" 20 50 15 \
-	"${W[@]}" 3>&1 1>&2 2>&3 3>&- \
-	)
+    let i=0
+    W=()
+    while read -r line; do
+        let i=$i+1
+        W+=($line "")
+    done < <( timedatectl list-timezones )
+    TIMEZONE=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
+    --menu "Choose your timezone!" 20 50 15 \
+    "${W[@]}" 3>&1 1>&2 2>&3 3>&- \
+    )
 else 
-	clear
-	exit 1
+    clear
+    exit 1
 fi
 
 
 if [ ! -z "$TIMEZONE" ]; then
-	let i=0
-	W=()
-	while read -r line; do
-		let i=$i+1
-		W+=($line "")
-	done < <( cat /etc/locale.gen | grep "UTF-8" | tail -n +2 | sed -e 's/^#*//' | awk '{print $1}' )
-	LOCALE=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
-		--menu "Choose your locale!" 20 50 15 \
-		"${W[@]}" 3>&1 1>&2 2>&3 3>&- \
-		)
+    let i=0
+    W=()
+    while read -r line; do
+        let i=$i+1
+        W+=($line "")
+    done < <( cat /etc/locale.gen | grep "UTF-8" | tail -n +2 | sed -e 's/^#*//' | awk '{print $1}' )
+    LOCALE=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
+    --menu "Choose your locale!" 20 50 15 \
+    "${W[@]}" 3>&1 1>&2 2>&3 3>&- \
+    )
 else 
-	clear
-	exit 1
+    clear
+    exit 1
 fi
 
 if [ ! -z "$LOCALE" ]; then
-	let i=0
-	W=()
-	while read -r line; do
-		let i=$i+1
-		W+=($line "")
-	done < <( localectl list-keymaps )
-	CLIKEYMAP=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
-		--menu "Choose your TTY keyboard layout:" 20 50 15 \
-		"${W[@]}" 3>&1 1>&2 2>&3 3>&- \
-	)
+    let i=0
+    W=()
+    while read -r line; do
+        let i=$i+1
+        W+=($line "")
+    done < <( localectl list-keymaps )
+    CLIKEYMAP=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
+    --menu "Choose your TTY keyboard layout:" 20 50 15 \
+    "${W[@]}" 3>&1 1>&2 2>&3 3>&- \
+    )
 else 
-	clear
-	exit 1
+    clear
+    exit 1
 fi
 
 if [[ "$EDITION" != "minimal" ]]; then
 if [ ! -z "$CLIKEYMAP" ]; then
-	let i=0
-	W=()
-	while read -r line; do
-		let i=$i+1
-		W+=($line "")
-	done < <( localectl list-x11-keymap-layouts )
-	X11KEYMAP=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
-		--menu "Choose your X11 keyboard layout:" 20 50 15 \
-		"${W[@]}" 3>&1 1>&2 2>&3 3>&- \
-	)
+    let i=0
+    W=()
+    while read -r line; do
+        let i=$i+1
+        W+=($line "")
+    done < <( localectl list-x11-keymap-layouts )
+    X11KEYMAP=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
+    --menu "Choose your X11 keyboard layout:" 20 50 15 \
+    "${W[@]}" 3>&1 1>&2 2>&3 3>&- \
+    )
 else 
-	clear
-	exit 1
+    clear
+    exit 1
 fi
 fi
 
 if [ ! -z "$CLIKEYMAP" ]; then
-	HOSTNAME=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
-	--inputbox "Enter desired hostname for this system:" 8 50 \
-	3>&1 1>&2 2>&3 3>&- \
-	)
+    HOSTNAME=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
+    --inputbox "Enter desired hostname for this system:" 8 50 \
+    3>&1 1>&2 2>&3 3>&- \
+    )
 else 
-	clear
-	exit 1
+    clear
+    exit 1
 fi
 
 if [ ! -z "$HOSTNAME" ]; then
-	dialog --clear --title "Manjaro ARM Installer" \
+    dialog --clear --title "Manjaro ARM Installer" \
     --yesno "Is the below information correct:
     Device = $DEVICE
     Edition = $EDITION
@@ -735,8 +741,8 @@ if [ ! -z "$HOSTNAME" ]; then
     Hostname = $HOSTNAME" 25 70 \
     3>&1 1>&2 2>&3 3>&-
 else
-	clear
-	exit 1
+    clear
+    exit 1
 fi
 
 response=$?
