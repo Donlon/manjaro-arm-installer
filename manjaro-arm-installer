@@ -207,9 +207,11 @@ create_install() {
     sed -i s/"enable systemd-resolved.service"/"#enable systemd-resolved.service"/ $TMPDIR/root/usr/lib/systemd/system-preset/90-systemd.preset
 
     echo "Correcting permissions from overlay..."
-    chown -R root:root $TMPDIR/root/etc
+    chown -R root:root $ROOTFS_IMG/rootfs_$ARCH/etc
+    chown -R root:root $ROOTFS_IMG/rootfs_$ARCH/usr/{local,share}
     if [[ "$EDITION" != "minimal" && "$EDITION" != "server" ]]; then
-        chown root:polkitd $TMPDIR/root/etc/polkit-1/rules.d
+        chown root:polkitd $ROOTFS_IMG/rootfs_$ARCH/etc/polkit-1/rules.d
+        chown root:polkitd $ROOTFS_IMG/rootfs_$ARCH/usr/share/polkit-1/rules.d
     elif [[ "$EDITION" = "cubocore" ]]; then
         cp $TMPDIR/root/usr/share/applications/corestuff.desktop $TMPDIR/root/etc/xdg/autostart/
     fi
