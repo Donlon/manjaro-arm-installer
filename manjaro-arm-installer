@@ -211,9 +211,11 @@ create_install() {
     chown -R root:root $TMPDIR/root/usr/{local,share}
     if [[ -d $TMPDIR/root/etc/polkit-1/rules.d ]]; then
         chown root:polkitd $TMPDIR/root/etc/polkit-1/rules.d
-    elif [[ -d $TMPDIR/root/usr/share/polkit-1/rules.d ]]; then
+    fi
+    if [[ -d $TMPDIR/root/usr/share/polkit-1/rules.d ]]; then
         chown root:polkitd $TMPDIR/root/usr/share/polkit-1/rules.d
-    elif [[ "$EDITION" = "cubocore" ]]; then
+    fi
+    if [[ "$EDITION" = "cubocore" ]]; then
         cp $TMPDIR/root/usr/share/applications/corestuff.desktop $TMPDIR/root/etc/xdg/autostart/
     fi
     
@@ -387,7 +389,6 @@ cleanup () {
         elif [ -f $TMPDIR/boot/cmdline.txt ]; then
             sed -i "s/LABEL=ROOT_MNJRO/PARTUUID=$ROOT_PARTUUID/g" $TMPDIR/boot/cmdline.txt
     fi
-    #sed -i "s/LABEL=ROOT_MNJRO/PARTUUID=$ROOT_PARTUUID/g" $TMPDIR/root/etc/fstab
     sync
 
     if [[ "$FSTYPE" = "btrfs" ]]; then
