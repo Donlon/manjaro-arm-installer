@@ -382,7 +382,7 @@ cleanup () {
     if [ -f $TMPDIR/boot/extlinux/extlinux.conf ]; then
     sed -i "s/LABEL=ROOT_MNJRO/PARTUUID=$ROOT_PARTUUID/g" $TMPDIR/boot/extlinux/extlinux.conf
         elif [ -f $TMPDIR/boot/efi/extlinux/extlinux.conf ]; then
-            sed -i "s/LABEL=ROOT_MNJRO/PARTUUID=$ROOT_PART/g" $TMPDIR/boot/efi/extlinux/extlinux.conf
+            sed -i "s/LABEL=ROOT_MNJRO/PARTUUID=$ROOT_PARTUUID/g" $TMPDIR/boot/efi/extlinux/extlinux.conf
         elif [ -f $TMPDIR/boot/boot.ini ]; then
             sed -i "s/LABEL=ROOT_MNJRO/PARTUUID=$ROOT_PARTUUID/g" $TMPDIR/boot/boot.ini
         elif [ -f $TMPDIR/boot/uEnv.ini ]; then
@@ -393,7 +393,7 @@ cleanup () {
     sync
 
     if [[ "$FSTYPE" = "btrfs" ]]; then
-        sed -i "s/LABEL=ROOT_MNJRO/PARTUUID=$ROOT_PART/g" $TMPDIR/root/etc/fstab
+        sed -i "s/LABEL=ROOT_MNJRO/PARTUUID=$ROOT_PARTUUID/g" $TMPDIR/root/etc/fstab
     else
         echo "PARTUUID=$ROOT_PARTUUID   /   $FSTYPE     defaults    0   1" >> $TMPDIR/root/etc/fstab
     fi
