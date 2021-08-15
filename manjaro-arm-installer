@@ -2,7 +2,7 @@
 
 # Set globals
 # *****************************
-VERSION="1.4.6"
+VERSION="1.4.7"
 # *****************************
 TMPDIR=/var/tmp/manjaro-arm-installer
 ARCH='aarch64'
@@ -374,11 +374,11 @@ cleanup () {
     # set UUID for boot partition in fstab
     BOOT_PARTUUID=$(lsblk -p -o NAME,PARTUUID | grep ${DEV_NAME}${SDDEV}1 | awk '{print $2}')
     sed -i "s/LABEL=BOOT_MNJRO/PARTUUID=$BOOT_PARTUUID/g" $TMPDIR/root/etc/fstab
-    echo "Set boot partition to $BOOT_PARTUUID in /etc/fstab..."
+    info "Set boot partition to $BOOT_PARTUUID in /etc/fstab..."
     
     # Change boot script and fstab to root partition UUID
     ROOT_PARTUUID=$(lsblk -p -o NAME,PARTUUID | grep ${DEV_NAME}${SDDEV}2 | awk '{print $2}')
-    echo "Set root partition to $ROOT_PARTUUID in the relevant boot script and /etc/fstab..."
+    info "Set root partition to $ROOT_PARTUUID in the relevant boot script and /etc/fstab..."
     if [ -f $TMPDIR/boot/extlinux/extlinux.conf ]; then
     sed -i "s/LABEL=ROOT_MNJRO/PARTUUID=$ROOT_PARTUUID/g" $TMPDIR/boot/extlinux/extlinux.conf
         elif [ -f $TMPDIR/boot/efi/extlinux/extlinux.conf ]; then
@@ -724,7 +724,7 @@ else
 fi
 
 if [ ! -z "$HOSTNAME" ]; then
-    dialog --clear --title "Manjaro ARM Installer" \
+    dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
     --yesno "Is the below information correct:
     Device = $DEVICE
     Edition = $EDITION
