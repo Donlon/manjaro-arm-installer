@@ -2,7 +2,7 @@
 
 # Set globals
 # *****************************
-VERSION="1.4.5"
+VERSION="1.4.6"
 # *****************************
 TMPDIR=/var/tmp/manjaro-arm-installer
 ARCH='aarch64'
@@ -232,7 +232,8 @@ create_install() {
         elif [ -f $TMPDIR/root/boot/uEnv.ini ]; then
             sed -i 's/setenv bootargs "/&rootflags=subvol=@ /' $TMPDIR/root/boot/uEnv.ini
         elif [ -f $TMPDIR/root/boot/cmdline.txt ]; then
-            sed -i 's/root=LABEL=ROOT_MNJRO/& rootflags=subvol=@/' $TMPDIR/root/boot/cmdline.txt
+            #sed -i 's/root=LABEL=ROOT_MNJRO/& rootflags=subvol=@/' $TMPDIR/root/boot/cmdline.txt
+            sed -i 's/^/rootflags=subvol=@ rootfstype=btrfs /g' $TMPDIR/root/boot/cmdline.txt
         #elif [ -f $TMPDIR/root/boot/boot.txt ]; then
         #    sed -i 's/setenv bootargs/& rootflags=subvol=@/' $TMPDIR/root/boot/boot.txt
         #    $NSPAWN $TMPDIR/root mkimage -A arm -O linux -T script -C none -n "U-Boot boot script" -d /boot/boot.txt /boot/boot.scr
@@ -387,7 +388,7 @@ cleanup () {
         elif [ -f $TMPDIR/boot/uEnv.ini ]; then
             sed -i "s/LABEL=ROOT_MNJRO/PARTUUID=$ROOT_PARTUUID/g" $TMPDIR/boot/uEnv.ini
         elif [ -f $TMPDIR/boot/cmdline.txt ]; then
-            sed -i "s/LABEL=ROOT_MNJRO/PARTUUID=$ROOT_PARTUUID/g" $TMPDIR/boot/cmdline.txt
+            sed -i "s/PARTUUID=/PARTUUID=$ROOT_PARTUUID/g" $TMPDIR/boot/cmdline.txt
     fi
     sync
 
