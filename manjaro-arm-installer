@@ -129,7 +129,7 @@ create_install() {
     
     info "Setting up keyrings..."
     $NSPAWN $TMPDIR/root pacman-key --init 1> /dev/null 2>&1
-    $NSPAWN $TMPDIR/root pacman-key --populate archlinux archlinuxarm manjaro manjaro-arm 1> /dev/null 2>&1
+    $NSPAWN $TMPDIR/root pacman-key --populate archlinuxarm manjaro manjaro-arm 1> /dev/null 2>&1
     
     info "Generating mirrorlist..."
     $NSPAWN $TMPDIR/root pacman-mirrors -f10 1> /dev/null 2>&1
