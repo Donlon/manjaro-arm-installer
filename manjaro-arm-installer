@@ -2,7 +2,7 @@
 
 # Set globals
 # *****************************
-VERSION="1.4.7"
+VERSION="1.4.8"
 # *****************************
 TMPDIR=/var/tmp/manjaro-arm-installer
 ARCH='aarch64'
@@ -416,7 +416,7 @@ cleanup () {
 
 tweakinitrd_crypt () {
     case "$DEVICE" in
-    pbpro)
+    pbpro|rockpro64|rockpi4b|rockpi4c)
       # Use the proper mkinitcpio.
       cat << EOF > ${TMPDIR}/root/etc/mkinitcpio.conf
 MODULES=(panfrost rockchipdrm drm_kms_helper hantro_vpu analogix_dp rockchip_rga panel_simple arc_uart cw2015_battery i2c-hid iscsi_boot_sysfs jsm pwm_bl uhid)
@@ -438,7 +438,7 @@ post_crypt () {
 
     # Modify the /boot/extlinux/extlinux.conf to match our needs
     case "$DEVICE" in
-    pbpro)
+    pbpro|rockpro64|rockpi4b|rockpi4c)
       # NOTE: I've tried to only modify the cryptdevice and root parameters but bootsplash and console=ttyS2 prevents to show the password prompt
       # TODO: Need to add plymouth support
       sed -i -e "s!APPEND.*!APPEND initrd=/initramfs-linux.img console=tty1 cryptdevice=UUID=${UUID}:ROOT_MNJRO root=/dev/mapper/ROOT_MNJRO rw rootwait!g" ${TMPDIR}/boot/extlinux/extlinux.conf
@@ -633,7 +633,7 @@ else
     exit 1
 fi
 
-if [[ "$DEVICE" = "pbpro" ]] && [[ "$FSTYPE" != "btrfs" ]]; then
+if [[ "$DEVICE" = "pbpro" ]] || [[ "$DEVICE" = "rockpro64" ]] || [[ "$DEVICE" = "rockpi4b" ]] || [[ "$DEVICE" = "rockpi4c" ]] && [[ "$FSTYPE" != "btrfs" ]]; then
     CRYPT=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
         --menu "[Experimental!] Do you want encryption on root partition?" 10 90 10 \
         "no"          "No, thanks" \
