@@ -19,6 +19,7 @@ This script is "interactive". Meaning that it asks you questions when run to cus
 * dosfstools
 * polkit
 * btrfs-progs (for btrfs filesystem support)
+* f2fs-tools (for f2fs filesystem support)
 * cryptsetup (for encryption support)
 
 ## Installing and using from Manjaro (x64 and ARM) repositories:
