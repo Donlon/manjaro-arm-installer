@@ -48,7 +48,7 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 # Sanity checks for dependencies
-declare -a DEPENDENCIES=("git" "parted" "systemd-nspawn" "wget" "dialog" "bsdtar" "openssl" "awk" "btrfs" "mkfs.vfat" "mkfs.btrfs" "cryptsetup")
+declare -a DEPENDENCIES=("git" "parted" "systemd-nspawn" "wget" "dialog" "bsdtar" "openssl" "awk" "btrfs" "mkfs.vfat" "mkfs.btrfs" "mkfs.f2fs" "cryptsetup")
 
 for i in "${DEPENDENCIES[@]}"; do
   if ! [[ -f "/bin/$i" || -f "/sbin/$i" || -f "/usr/bin/$i" || -f "/usr/sbin/$i" ]] ; then
@@ -219,27 +219,36 @@ create_install() {
         cp $TMPDIR/root/usr/share/applications/corestuff.desktop $TMPDIR/root/etc/xdg/autostart/
     fi
     
-    if [[ "$FSTYPE" = "btrfs" ]]; then
-        info "Adding btrfs support to system..."
-        echo "LABEL=ROOT_MNJRO / btrfs  subvol=@,compress=zstd,defaults,noatime  0  0" >> $TMPDIR/root/etc/fstab
-        echo "LABEL=ROOT_MNJRO /home btrfs  subvol=@home,compress=zstd,defaults,noatime  0  0" >> $TMPDIR/root/etc/fstab
-        sed -i '/^MODULES/{s/)/ btrfs)/}' $TMPDIR/root/etc/mkinitcpio.conf
-        $NSPAWN $TMPDIR/root mkinitcpio -P 1> /dev/null 2>&1
-        if [ -f $TMPDIR/root/boot/extlinux/extlinux.conf ]; then
-            sed -i 's/APPEND/& rootflags=subvol=@/' $TMPDIR/root/boot/extlinux/extlinux.conf
-        elif [ -f $TMPDIR/root/boot/boot.ini ]; then
-            sed -i 's/setenv bootargs "/&rootflags=subvol=@ /' $TMPDIR/root/boot/boot.ini
-        elif [ -f $TMPDIR/root/boot/uEnv.ini ]; then
-            sed -i 's/setenv bootargs "/&rootflags=subvol=@ /' $TMPDIR/root/boot/uEnv.ini
-        elif [ -f $TMPDIR/root/boot/cmdline.txt ]; then
-            #sed -i 's/root=LABEL=ROOT_MNJRO/& rootflags=subvol=@/' $TMPDIR/root/boot/cmdline.txt
-            sed -i 's/^/rootflags=subvol=@ rootfstype=btrfs /g' $TMPDIR/root/boot/cmdline.txt
-        #elif [ -f $TMPDIR/root/boot/boot.txt ]; then
-        #    sed -i 's/setenv bootargs/& rootflags=subvol=@/' $TMPDIR/root/boot/boot.txt
-        #    $NSPAWN $TMPDIR/root mkimage -A arm -O linux -T script -C none -n "U-Boot boot script" -d /boot/boot.txt /boot/boot.scr
-        fi
-
-    fi
+    case "$FSTYPE" in
+        btrfs)
+            info "Adding btrfs support to system..."
+            if [ -f $TMPDIR/boot/extlinux/extlinux.conf ]; then
+                sed -i 's/APPEND/& rootflags=subvol=@/' $TMPDIR/boot/extlinux/extlinux.conf
+                elif [ -f $TMPDIR/boot/boot.ini ]; then
+                    sed -i 's/setenv bootargs "/&rootflags=subvol=@ /' $TMPDIR/boot/boot.ini
+                elif [ -f $TMPDIR/boot/uEnv.ini ]; then
+                    sed -i 's/setenv bootargs "/&rootflags=subvol=@ /' $TMPDIR/boot/uEnv.ini
+                elif [ -f $TMPDIR/boot/cmdline.txt ]; then
+                    sed -i 's/^/rootflags=subvol=@ rootfstype=btrfs /' $TMPDIR/boot/cmdline.txt
+                elif [ -f $TMPDIR/boot/boot.txt ]; then
+                    sed -i 's/setenv bootargs/& rootflags=subvol=@/' $TMPDIR/boot/boot.txt
+                    $NSPAWN $TMPDIR mkimage -A arm -O linux -T script -C none -n "U-Boot boot script" -d /boot/boot.txt /boot/boot.scr
+            fi
+            echo "LABEL=ROOT_MNJRO / btrfs  subvol=@,compress=zstd,defaults,noatime  0  0" >> $TMPDIR/root/etc/fstab
+            echo "LABEL=ROOT_MNJRO /home btrfs  subvol=@home,compress=zstd,defaults,noatime  0  0" >> $TMPDIR/root/etc/fstab
+            sed -i '/^MODULES/{s/)/ btrfs)/}' $TMPDIR/root/etc/mkinitcpio.conf
+            $NSPAWN $TMPDIR mkinitcpio -P 1> /dev/null 2>&1
+            ;;
+        f2fs)
+            info "Adding f2fs support to system..."
+            echo "LABEL=ROOT_MNJRO / f2fs  compress=zstd,defaults,noatime  0  0" >> $TMPDIR/root/etc/fstab
+            sed -i '/^MODULES/{s/)/ f2fs)/}' $TMPDIR/root/etc/mkinitcpio.conf
+            $NSPAWN $TMPDIR mkinitcpio -P 1> /dev/null 2>&1
+            ;;
+        *)
+            info "Adding ext4 support to system..."
+            ;;
+    esac
 
     
     if [[ "$CRYPT" = "yes" ]]; then
@@ -307,6 +316,17 @@ prepare_card () {
                 mkdir -p $TMPDIR/root/home
                 mount -o compress=zstd,subvol=@home "${SDCARD}${SDDEV}2" $TMPDIR/root/home
                 mount ${SDCARD}${SDDEV}1 $TMPDIR/boot
+                ;;
+            f2fs)
+                parted -s $SDCARD mkpart primary f2fs "${END_SECTOR}s" 100% 1> /dev/null 2>&1
+                partprobe $SDCARD 1> /dev/null 2>&1
+                mkfs.vfat "${SDCARD}${SDDEV}1" -n BOOT_MNJRO 1> /dev/null 2>&1
+                mkfs.f2fs -l ROOT_MNJRO -O extra_attr,inode_checksum,sb_checksum,compression "${SDCARD}${SDDEV}2" 1> /dev/null 2>&1
+
+                mkdir -p $TMPDIR/root
+                mkdir -p $TMPDIR/boot
+                mount ${SDCARD}${SDDEV}1 $TMPDIR/boot
+                mount ${SDCARD}${SDDEV}2 $TMPDIR/root
                 ;;
             ext4)
                 parted -s $SDCARD mkpart primary ext4 "${END_SECTOR}s" 100% 1> /dev/null 2>&1
@@ -392,11 +412,14 @@ cleanup () {
     fi
     sync
 
-    if [[ "$FSTYPE" = "btrfs" ]]; then
-        sed -i "s/LABEL=ROOT_MNJRO/PARTUUID=$ROOT_PARTUUID/g" $TMPDIR/root/etc/fstab
-    else
-        echo "PARTUUID=$ROOT_PARTUUID   /   $FSTYPE     defaults    0   1" >> $TMPDIR/root/etc/fstab
-    fi
+    case "$FSTYPE" in
+        btrfs|f2fs)
+            sed -i "s/LABEL=ROOT_MNJRO/PARTUUID=$ROOT_PARTUUID/g" $TMPDIR/root/etc/fstab
+        ;;
+        *)
+            echo "PARTUUID=$ROOT_PARTUUID   /   $FSTYPE     defaults    0   1" >> $TMPDIR/root/etc/fstab
+        ;;
+    esac
     #clean up
     if [[ "$FSTYPE" = "btrfs" ]]; then
         umount $TMPDIR/root/home
@@ -624,8 +647,9 @@ fi
 if [ ! -z "$SDCARD" ]; then
     FSTYPE=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
         --menu "Choose a filesystem:" 10 90 10 \
-        "ext4"       "Regular ext4 filesystem" \
+        "ext4"       "Regular ext4 filesystem for the root partition" \
         "btrfs"      "Uses btrfs for root partition and makes / and /home subvolumes" \
+        "f2fs"       "Use f2fs for the root partition" \
         3>&1 1>&2 2>&3 3>&-) 
 
 else 
@@ -633,7 +657,7 @@ else
     exit 1
 fi
 
-if [[ "$DEVICE" = "pbpro" ]] || [[ "$DEVICE" = "rockpro64" ]] || [[ "$DEVICE" = "rockpi4b" ]] || [[ "$DEVICE" = "rockpi4c" ]] && [[ "$FSTYPE" != "btrfs" ]]; then
+if [[ "$DEVICE" = "pbpro" ]] || [[ "$DEVICE" = "rockpro64" ]] || [[ "$DEVICE" = "rockpi4b" ]] || [[ "$DEVICE" = "rockpi4c" ]] && [[ "$FSTYPE" != "btrfs" ]] && [[ "$FSTYPE" != "f2fs" ]]; then
     CRYPT=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
         --menu "[Experimental!] Do you want encryption on root partition?" 10 90 10 \
         "no"          "No, thanks" \
