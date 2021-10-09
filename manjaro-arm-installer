@@ -321,7 +321,7 @@ prepare_card () {
                 parted -s $SDCARD mkpart primary f2fs "${END_SECTOR}s" 100% 1> /dev/null 2>&1
                 partprobe $SDCARD 1> /dev/null 2>&1
                 mkfs.vfat "${SDCARD}${SDDEV}1" -n BOOT_MNJRO 1> /dev/null 2>&1
-                mkfs.f2fs -l ROOT_MNJRO -O extra_attr,inode_checksum,sb_checksum,compression "${SDCARD}${SDDEV}2" 1> /dev/null 2>&1
+                mkfs.f2fs -f -l ROOT_MNJRO -O extra_attr,inode_checksum,sb_checksum,compression "${SDCARD}${SDDEV}2" 1> /dev/null 2>&1
 
                 mkdir -p $TMPDIR/root
                 mkdir -p $TMPDIR/boot
