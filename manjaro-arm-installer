@@ -241,6 +241,7 @@ create_install() {
             ;;
         f2fs)
             info "Adding f2fs support to system..."
+            $NSPAWN $TMPDIR pacman -S f2fs-tools --noconfirm 1> /dev/null 2>&1
             echo "LABEL=ROOT_MNJRO / f2fs  compress=zstd,defaults,noatime  0  0" >> $TMPDIR/root/etc/fstab
             sed -i '/^MODULES/{s/)/ f2fs)/}' $TMPDIR/root/etc/mkinitcpio.conf
             $NSPAWN $TMPDIR mkinitcpio -P 1> /dev/null 2>&1
