@@ -665,10 +665,11 @@ fi
 
 if [[ "$SDTYP" = "sd" ]]; then
     SDDEV=""
-elif [[ "$SDTYP" = "mm" ]]; then
+elif [[ "$SDTYP" = "mm" || "$SDTYP" = "nv" ]]; then
     SDDEV="p"
 else 
     clear
+    echo "Unkown Block Device Type"
     exit 1
 fi
 
