@@ -382,7 +382,7 @@ cleanup () {
     pinephone)
         dd if=$TMPDIR/boot/u-boot-sunxi-with-spl-$DEVICE.bin of=${SDCARD} conv=fsync bs=8k seek=1 1> /dev/null 2>&1
         ;;
-    pbpro|rockpro64|rockpi4b|rockpi4c|nanopc-t4|rock64|roc-cc|clockworkpi-a06)
+    pbpro|rockpro64|rockpi4b|rockpi4c|nanopc-t4|rock64|roc-cc|clockworkpi-a06|quartz64-a)
         dd if=$TMPDIR/boot/idbloader.img of=${SDCARD} seek=64 conv=notrunc,fsync 1> /dev/null 2>&1
         dd if=$TMPDIR/boot/u-boot.itb of=${SDCARD} seek=16384 conv=notrunc,fsync 1> /dev/null 2>&1
         ;;
@@ -521,6 +521,7 @@ DEVICE=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
         "roc-cc"        "LibreComputer Renegade" \
         "nanopc-t4"     "NanoPC T4" \
         "clockworkpi-a06" "ClockworkPi DevTerm" \
+        "quartz64-a"    "Quartz64 Model A" \
         "vim3"          "Khadas Vim 3" \
         "vim2"          "Khadas Vim 2" \
         "vim1"          "Khadas Vim 1" \
