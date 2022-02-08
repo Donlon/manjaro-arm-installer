@@ -73,6 +73,8 @@ sudo bash ./manjaro-arm-installer
 * Rock64
 * LibreComputer Renegade (Roc-CC)
 * NanoPC T4
+* ClockworkPI DevTerm (new)
+* Quartz64 Model A (new)
 * Khadas Vim 3
 * Khadas Vim 2
 * Khadas Vim 1
