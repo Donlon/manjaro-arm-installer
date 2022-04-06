@@ -379,7 +379,7 @@ cleanup () {
         dd if=$TMPDIR/boot/bl1.bin.hardkernel of=${SDCARD} conv=fsync bs=512 skip=1 seek=1 1> /dev/null 2>&1
         dd if=$TMPDIR/boot/u-boot.gxbb of=${SDCARD} conv=fsync bs=512 seek=97 1> /dev/null 2>&1
         ;;
-    on2|on2-plus|oc4)
+    on2|on2-plus|oc4|ohc4)
         dd if=$TMPDIR/boot/u-boot.bin of=${SDCARD} conv=fsync,notrunc bs=512 seek=1 1> /dev/null 2>&1
         ;;
     vim1|vim2|vim3)
@@ -523,6 +523,7 @@ DEVICE=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
         "on2-plus"      "Odroid N2+" \
         "oc4"           "Odroid C4" \
         "oc2"           "Odroid C2" \
+        "ohc4"          "Odroid HC4" \
         "pinebook"      "Pinebook" \
         "pine64-lts"    "Pine64-LTS / Sopine" \
         "pine64"        "Pine64+" \
@@ -533,7 +534,7 @@ DEVICE=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
         "roc-cc"        "LibreComputer Renegade" \
         "nanopc-t4"     "NanoPC T4" \
         "clockworkpi-a06" "ClockworkPi DevTerm" \
-        "quartz64-a"  "Quartz64 Model A" \
+        "quartz64-a"    "Quartz64 Model A" \
         "vim3"          "Khadas Vim 3" \
         "vim2"          "Khadas Vim 2" \
         "vim1"          "Khadas Vim 1" \

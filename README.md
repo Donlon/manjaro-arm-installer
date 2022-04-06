@@ -66,6 +66,7 @@ sudo bash ./manjaro-arm-installer
 * Odroid N2+
 * Odroid C4
 * Odroid C2
+* Odroid HC4
 * Pinebook
 * Pine64-LTS / Sopine
 * Pine64+
