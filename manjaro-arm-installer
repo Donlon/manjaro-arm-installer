@@ -141,6 +141,7 @@ create_install() {
     # Install device and editions specific packages
     $NSPAWN $TMPDIR/root pacman -Syyu base manjaro-system manjaro-release systemd systemd-libs $PKG_EDITION $PKG_DEVICE --noconfirm
     
+    
     info "Enabling services..."
     # Enable services
     $NSPAWN $TMPDIR/root systemctl enable getty.target haveged.service 1>/dev/null
@@ -168,6 +169,12 @@ create_install() {
 
     info "Setting password for root ..."
     $NSPAWN $TMPDIR/root awk -i inplace -F: "BEGIN {OFS=FS;} \$1 == \"root\" {\$2=\"$(openssl passwd -6 $(cat $TMPDIR/rootpassword))\"} 1" /etc/shadow 1> /dev/null 2>&1
+    
+    if [[ "$EDITION" = "plasma-mobile" ]]; then
+        $NSPAWN $TMPDIR/root userdel -f -r kde
+        elif [[ "$EDITION" = "phosh" ]]; then
+            $NSPAWN $TMPDIR/root userdel -f -r manjaro
+    fi
 
     info "Adding user..."
     $NSPAWN $TMPDIR/root useradd -m -G wheel,sys,audio,input,video,storage,lp,network,users,power -p $(openssl passwd -6 $(cat $TMPDIR/password)) -s /bin/bash $(cat $TMPDIR/user) 1> /dev/null 2>&1
@@ -202,10 +209,13 @@ create_install() {
     sed -i s/"us"/"$X11KEYMAP"/ $TMPDIR/root/etc/X11/xorg.conf.d/00-keyboard.conf
     fi
     if [[ "$EDITION" = "sway" ]]; then
-    sed -i s/"us"/"$X11KEYMAP"/ $TMPDIR/root/etc/sway/inputs/default-keyboard 1> /dev/null 2>&1
+        sed -i s/"us"/"$X11KEYMAP"/ $TMPDIR/root/etc/sway/inputs/default-keyboard 1> /dev/null 2>&1
     fi
     echo "$HOSTNAME" | tee --append $TMPDIR/root/etc/hostname 1> /dev/null 2>&1
     sed -i s/"enable systemd-resolved.service"/"#enable systemd-resolved.service"/ $TMPDIR/root/usr/lib/systemd/system-preset/90-systemd.preset
+    if [[ "$EDITION" = "plasma-mobile" ]]; then
+        sed -i "s/User=kde/User=$USER/g" $TMPDIR/root/etc/sddm.conf.d/00-default.conf
+    fi
 
     echo "Correcting permissions from overlay..."
     chown -R root:root $TMPDIR/root/etc
@@ -223,16 +233,16 @@ create_install() {
     case "$FSTYPE" in
         btrfs)
             info "Adding btrfs support to system..."
-            if [ -f $TMPDIR/boot/extlinux/extlinux.conf ]; then
-                sed -i 's/APPEND/& rootflags=subvol=@/' $TMPDIR/boot/extlinux/extlinux.conf
-                elif [ -f $TMPDIR/boot/boot.ini ]; then
-                    sed -i 's/setenv bootargs "/&rootflags=subvol=@ /' $TMPDIR/boot/boot.ini
-                elif [ -f $TMPDIR/boot/uEnv.ini ]; then
-                    sed -i 's/setenv bootargs "/&rootflags=subvol=@ /' $TMPDIR/boot/uEnv.ini
-                #elif [ -f $TMPDIR/boot/cmdline.txt ]; then
-                #    sed -i 's/^/rootflags=subvol=@ rootfstype=btrfs /' $TMPDIR/boot/cmdline.txt
-                elif [ -f $TMPDIR/boot/boot.txt ]; then
-                    sed -i 's/setenv bootargs/& rootflags=subvol=@/' $TMPDIR/boot/boot.txt
+            if [ -f $TMPDIR/root/boot/extlinux/extlinux.conf ]; then
+                sed -i 's/APPEND/& rootflags=subvol=@/' $TMPDIR/root/boot/extlinux/extlinux.conf
+                elif [ -f $TMPDIR/root/boot/boot.ini ]; then
+                    sed -i 's/setenv bootargs /&rootflags=subvol=@ /' $TMPDIR/root/boot/boot.ini
+                elif [ -f $TMPDIR/root/boot/uEnv.ini ]; then
+                    sed -i 's/setenv bootargs /&rootflags=subvol=@ /' $TMPDIR/root/boot/uEnv.ini
+                #elif [ -f $TMPDIR/root/boot/cmdline.txt ]; then
+                #    sed -i 's/^/rootflags=subvol=@ rootfstype=btrfs /' $TMPDIR/root/boot/cmdline.txt
+                elif [ -f $TMPDIR/root/boot/boot.txt ]; then
+                    sed -i 's/setenv bootargs/& rootflags=subvol=@/' $TMPDIR/root/boot/boot.txt
                     $NSPAWN $TMPDIR/root mkimage -A arm -O linux -T script -C none -n "U-Boot boot script" -d /boot/boot.txt /boot/boot.scr
             fi
             echo "LABEL=ROOT_MNJRO / btrfs  subvol=@,compress=zstd,defaults,noatime  0  0" >> $TMPDIR/root/etc/fstab
@@ -328,7 +338,7 @@ prepare_card () {
                 mkdir -p $TMPDIR/root
                 mkdir -p $TMPDIR/boot
                 mount ${SDCARD}${SDDEV}1 $TMPDIR/boot
-                mount ${SDCARD}${SDDEV}2 $TMPDIR/root
+                mount -t f2fs ${SDCARD}${SDDEV}2 $TMPDIR/root
                 ;;
             ext4)
                 parted -s $SDCARD mkpart primary ext4 "${END_SECTOR}s" 100% 1> /dev/null 2>&1
@@ -380,7 +390,7 @@ cleanup () {
         dd if=$TMPDIR/boot/u-boot-sunxi-with-spl-$DEVICE.bin of=${SDCARD} conv=fsync bs=128k seek=1 1> /dev/null 2>&1
         ;;
     pinephone)
-        dd if=$TMPDIR/boot/u-boot-sunxi-with-spl-$DEVICE.bin of=${SDCARD} conv=fsync bs=8k seek=1 1> /dev/null 2>&1
+        dd if=$TMPDIR/boot/u-boot-sunxi-with-spl-$DEVICE-552.bin of=${SDCARD} conv=fsync bs=8k seek=1 1> /dev/null 2>&1
         ;;
     pbpro|rockpro64|rockpi4b|rockpi4c|nanopc-t4|rock64|roc-cc|clockworkpi-a06|quartz64-a)
         dd if=$TMPDIR/boot/idbloader.img of=${SDCARD} seek=64 conv=notrunc,fsync 1> /dev/null 2>&1
@@ -409,8 +419,9 @@ cleanup () {
             sed -i "s/LABEL=ROOT_MNJRO/PARTUUID=$ROOT_PARTUUID/g" $TMPDIR/boot/boot.ini
         elif [ -f $TMPDIR/boot/uEnv.ini ]; then
             sed -i "s/LABEL=ROOT_MNJRO/PARTUUID=$ROOT_PARTUUID/g" $TMPDIR/boot/uEnv.ini
-        #elif [ -f $TMPDIR/boot/cmdline.txt ]; then
-        #    sed -i "s/PARTUUID=/PARTUUID=$ROOT_PARTUUID/g" $TMPDIR/boot/cmdline.txt
+        #elif [ -f $TMPDIR/boot/boot.txt ]; then
+        #    sed -i "s/PARTUUID=/PARTUUID=$ROOT_PARTUUID/g" $TMPDIR/boot/boot.txt
+        #    $NSPAWN $TMPDIR/root mkimage -A arm -O linux -T script -C none -n "U-Boot boot script" -d $TMPDIR/boot/boot.txt $TMPDIR/boot/boot.scr
     fi
     sync
     
@@ -518,6 +529,8 @@ DEVICE=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
         "pine64-lts"    "Pine64-LTS / Sopine" \
         "pine64"        "Pine64+" \
         "pine-h64"      "Pine H64" \
+        "pinetab"       "PineTab" \
+        "pinephone"     "PinePhone" \
         "rock64"        "Rock64" \
         "roc-cc"        "LibreComputer Renegade" \
         "nanopc-t4"     "NanoPC T4" \
@@ -532,6 +545,13 @@ DEVICE=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
 
 #The if statement makes sure that the user has put in something in the previous prompt. If not (left blank or pressed cancel) the script will end
 if [ ! -z "$DEVICE" ]; then
+    if [[ "$DEVICE" = "pinetab" ]] || [[ "$DEVICE" = "pinephone" ]]; then
+        EDITION=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
+            --menu "Choose an edition:" 20 75 10 \
+            "plasma-mobile"     "Plasma Mobile (QT based mobile UI)" \
+            "phosh"             "Phosh (GTK based mobile UI)" \
+            3>&1 1>&2 2>&3 3>&-)
+    else
     EDITION=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
         --menu "Choose an edition:" 20 75 10 \
         "minimal"       "Minimal Edition            (only CLI)" \
@@ -545,18 +565,27 @@ if [ ! -z "$DEVICE" ]; then
         "server"        "Minimal with LAMP and Docker (only cli)" \
         "budgie"        "Full Budgie desktop (EXPERIMENTAL))" \
         3>&1 1>&2 2>&3 3>&-) 
-
+    fi
 else 
     clear
     exit 1
 fi
 
-
+if [[ "$EDITION" = "phosh" ]]; then
+    #Set Phosh specific variables
+    USER="manjaro"
+    PASSWORD="123456"
+    CONFIRMPASSWORD="123456"
+    ROOTPASSWORD="root"
+    CONFIRMROOTPASSWORD="root"
+fi
 if [ ! -z "$EDITION" ]; then
-    USER=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
-    --inputbox "Enter the username you want:
+    if [[ "$EDITION" != "phosh" ]]; then
+        USER=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
+        --inputbox "Enter the username you want:
 (usernames must be all lowercase and first character may not be a number)" 10 90 \
-    3>&1 1>&2 2>&3 3>&-)
+        3>&1 1>&2 2>&3 3>&-)
+    fi
     if [[ "$USER" =~ [A-Z] ]] || [[ "$USER" =~ ^[0-9] ]] || [[ "$USER" == *['!'@#\$%^\&*()_+]* ]]; then
     clear
     msg "Configuration aborted! Username contained invalid characters."
@@ -592,20 +621,24 @@ fi
 
 
 if [ ! -z "$FULLNAME" ]; then
-    PASSWORD=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
-    --insecure --passwordbox "Enter new Password for $USER:" 8 50 \
-    3>&1 1>&2 2>&3 3>&- \
-    )
+    if [[ "$EDITION" != "phosh" ]]; then
+        PASSWORD=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
+        --insecure --passwordbox "Enter new Password for $USER:" 8 50 \
+        3>&1 1>&2 2>&3 3>&- \
+        )
+    fi
 else 
     clear
     exit 1
 fi
 
 if [ ! -z "$PASSWORD" ]; then
-    CONFIRMPASSWORD=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
-    --insecure --passwordbox "Confirm new Password for $USER:" 8 50 \
-    3>&1 1>&2 2>&3 3>&- \
-    )
+    if [[ "$EDITION" != "phosh" ]]; then
+        CONFIRMPASSWORD=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
+        --insecure --passwordbox "Confirm new Password for $USER:" 8 50 \
+        3>&1 1>&2 2>&3 3>&- \
+        )
+    fi
 else 
     clear
     exit 1
@@ -618,20 +651,24 @@ if [[ "$PASSWORD" != "$CONFIRMPASSWORD" ]]; then
 fi
 
 if [ ! -z "$CONFIRMPASSWORD" ]; then
-    ROOTPASSWORD=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
-    --insecure --passwordbox "Enter new Root Password:" 8 50 \
-    3>&1 1>&2 2>&3 3>&- \
-    )
+    if [[ "$EDITION" != "phosh" ]]; then
+        ROOTPASSWORD=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
+        --insecure --passwordbox "Enter new Root Password:" 8 50 \
+        3>&1 1>&2 2>&3 3>&- \
+        )
+    fi
 else 
     clear
     exit 1
 fi
 
 if [ ! -z "$ROOTPASSWORD" ]; then
-    CONFIRMROOTPASSWORD=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
-    --insecure --passwordbox "Confirm new Root Password:" 8 50 \
-    3>&1 1>&2 2>&3 3>&- \
-    )
+    if [[ "$EDITION" != "phosh" ]]; then
+        CONFIRMROOTPASSWORD=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
+        --insecure --passwordbox "Confirm new Root Password:" 8 50 \
+        3>&1 1>&2 2>&3 3>&- \
+        )
+    fi
 else 
     clear
     exit 1
@@ -684,7 +721,6 @@ if [ ! -z "$SDCARD" ]; then
         "btrfs"      "Uses btrfs for root partition and makes / and /home subvolumes" \
         "f2fs"       "Use f2fs for the root partition" \
         3>&1 1>&2 2>&3 3>&-) 
-
 else 
     clear
     exit 1
@@ -817,10 +853,19 @@ esac
 installer_getarmprofiles
 
 #Package lists
+sed -i 's/pico-wizard-plamo-scripts//g' $TMPDIR/arm-profiles/editions/$EDITION
+sed -i 's/pico-wizard-git//g' $TMPDIR/arm-profiles/editions/$EDITION
 PKG_DEVICE=$(grep "^[^#;]" $TMPDIR/arm-profiles/devices/$DEVICE | awk '{print $1}')
-PKG_EDITION=$(grep "^[^#;]" $TMPDIR/arm-profiles/editions/$EDITION | awk '{print $1}')
-SRV_EDITION=$(grep "^[^#;]" $TMPDIR/arm-profiles/services/$EDITION | awk '{print $1}')
-cat $TMPDIR/arm-profiles/services/$EDITION | sed -e '/^#/d' -e '/>pinephone/d' >$srv_list
+case "$DEVICE" in
+    pinephone)
+        PKG_EDITION=$(grep "^[^#;]" $TMPDIR/arm-profiles/editions/$EDITION | awk '{sub(/>pinephone/,""); print $1}')
+        cat $TMPDIR/arm-profiles/services/$EDITION | sed -e '/^#/d' -e 's/>pinephone //g' >$srv_list
+        ;;
+    *)
+        PKG_EDITION=$(grep "^[^#;]" $TMPDIR/arm-profiles/editions/$EDITION | awk '{sub(/>pinephone.*/,""); print $1}')
+        cat $TMPDIR/arm-profiles/services/$EDITION | sed -e '/^#/d' -e '/>pinephone/d' >$srv_list
+        ;;
+esac
 
 
 # Commands
