@@ -1,4 +1,4 @@
-# manjaro-arm-installer
+# Manjaro ARM Installer
 
 Scripts for installing Manjaro ARM directly to SD/eMMC cards without the need for images.
 
@@ -59,6 +59,8 @@ sudo bash ./manjaro-arm-installer
 ## Supported Devices:
 * Raspberry Pi 4/400/3+/3
 * Pinebook Pro
+* PinePhone (new)
+* PinePhone Pro (new)
 * RockPro64
 * Rock Pi 4B
 * Rock Pi 4C
@@ -92,6 +94,8 @@ sudo bash ./manjaro-arm-installer
 * Server (minimal install with LAMP and Docker)
 * Gnome (full Gnome desktop with apps)
 * Budgie (full Budge desktop with apps) (EXPERIMENTAL)
+* Phosh (A mobile interface for phones based on GTK/Gnome)
+* Plasma Mobile (A mobile interface for phones based on QT/Plasma)
 
 ## Other notes:
 This script is available in the **Manjaro** repository and can be installed with `sudo pacman -S manjaro-arm-installer`.

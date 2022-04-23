@@ -2,7 +2,7 @@
 
 # Set globals
 # *****************************
-VERSION="1.4.8"
+VERSION="1.4.9"
 # *****************************
 TMPDIR=/var/tmp/manjaro-arm-installer
 ARCH='aarch64'
@@ -392,7 +392,7 @@ cleanup () {
     pinephone)
         dd if=$TMPDIR/boot/u-boot-sunxi-with-spl-$DEVICE-552.bin of=${SDCARD} conv=fsync bs=8k seek=1 1> /dev/null 2>&1
         ;;
-    pbpro|rockpro64|rockpi4b|rockpi4c|nanopc-t4|rock64|roc-cc|clockworkpi-a06|quartz64-a)
+    pbpro|rockpro64|rockpi4b|rockpi4c|nanopc-t4|rock64|roc-cc|clockworkpi-a06|quartz64-a|pinephonepro)
         dd if=$TMPDIR/boot/idbloader.img of=${SDCARD} seek=64 conv=notrunc,fsync 1> /dev/null 2>&1
         dd if=$TMPDIR/boot/u-boot.itb of=${SDCARD} seek=16384 conv=notrunc,fsync 1> /dev/null 2>&1
         ;;
@@ -531,6 +531,7 @@ DEVICE=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
         "pine-h64"      "Pine H64" \
         "pinetab"       "PineTab" \
         "pinephone"     "PinePhone" \
+        "pinephonepro"  "PinePhone Pro (Experimental)" \
         "rock64"        "Rock64" \
         "roc-cc"        "LibreComputer Renegade" \
         "nanopc-t4"     "NanoPC T4" \
@@ -545,7 +546,7 @@ DEVICE=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
 
 #The if statement makes sure that the user has put in something in the previous prompt. If not (left blank or pressed cancel) the script will end
 if [ ! -z "$DEVICE" ]; then
-    if [[ "$DEVICE" = "pinetab" ]] || [[ "$DEVICE" = "pinephone" ]]; then
+    if [[ "$DEVICE" = "pinetab" ]] || [[ "$DEVICE" = "pinephone" ]] || [[ "$DEVICE" = "pinephonepro" ]]; then
         EDITION=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
             --menu "Choose an edition:" 20 75 10 \
             "plasma-mobile"     "Plasma Mobile (QT based mobile UI)" \
