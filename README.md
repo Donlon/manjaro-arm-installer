@@ -1,6 +1,6 @@
 # Manjaro ARM Installer
 
-Scripts for installing Manjaro ARM directly to SD/eMMC cards without the need for images.
+Scripts for installing Manjaro ARM directly to SD/eMMC cards or USB sticks without the need for images.
 
 This script is "interactive". Meaning that it asks you questions when run to customize your install. Like username, password etc.
 
@@ -41,7 +41,7 @@ sudo bash manjaro-arm-installer
 ## Installing and using from gitlab:
 To use this script, please make sure that the following is correct:
 
-* An SD/eMMC card with at least 8 GB storage is plugged in, but not mounted. This Script **will** remove everything on it.
+* An SD/eMMC card or USB stick with at least 8 GB storage is plugged in, but not mounted. This Script **will** remove everything on it.
 * That your user account has `sudo` rights.
 * That you have rebooted or restarted the binfmt service with `sudo systemctl restart systemd-binfmt`.
 
@@ -83,6 +83,7 @@ sudo bash ./manjaro-arm-installer
 * Khadas Vim 2
 * Khadas Vim 1
 * Beelink GT1 Ultimate
+* Generic (new)
 
 ## Supported Editions / Desktops:
 * Minimal (no xorg, no apps)

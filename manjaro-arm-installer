@@ -541,6 +541,7 @@ DEVICE=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
         "vim2"          "Khadas Vim 2" \
         "vim1"          "Khadas Vim 1" \
         "gt1-ultimate"  "Beelink GT1 Ultimate" \
+        "generic"       "Generic" \
         3>&1 1>&2 2>&3 3>&-)
 
 
