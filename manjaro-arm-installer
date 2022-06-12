@@ -2,7 +2,7 @@
 
 # Set globals
 # *****************************
-VERSION="1.4.9"
+VERSION="1.4.11"
 # *****************************
 TMPDIR=/var/tmp/manjaro-arm-installer
 ARCH='aarch64'
