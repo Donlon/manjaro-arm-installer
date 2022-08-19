@@ -392,7 +392,7 @@ cleanup () {
     pinephone)
         dd if=$TMPDIR/boot/u-boot-sunxi-with-spl-$DEVICE-552.bin of=${SDCARD} conv=fsync bs=8k seek=1 1> /dev/null 2>&1
         ;;
-    clockworkpi-a06|nanopc-t4|opi4-lts|pbpro|pinephonepro|quartz64-a|quartz64-b|rock3a|rock64|roc-cc|rockpi4b|rockpi4c|rockpro64)
+    clockworkpi-a06|nanopc-t4|om1|opi4-lts|pbpro|pinephonepro|quartz64-a|quartz64-b|rock3a|rock64|roc-cc|rockpi4b|rockpi4c|rockpro64)
         dd if=$TMPDIR/boot/idbloader.img of=${SDCARD} seek=64 conv=notrunc,fsync 1> /dev/null 2>&1
         dd if=$TMPDIR/boot/u-boot.itb of=${SDCARD} seek=16384 conv=notrunc,fsync 1> /dev/null 2>&1
         ;;
@@ -521,6 +521,7 @@ DEVICE=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
         "oc4"           "Odroid C4" \
         "oc2"           "Odroid C2" \
         "ohc4"          "Odroid HC4" \
+        "om1"           "Odroid M1" \
         "on2"           "Odroid N2" \
         "on2-plus"      "Odroid N2+" \
         "opi4-lts"      "Orange Pi 4 LTS" \
