@@ -2,7 +2,7 @@
 
 # Set globals
 # *****************************
-VERSION="1.4.12"
+VERSION="1.5.0"
 # *****************************
 TMPDIR=/var/tmp/manjaro-arm-installer
 ARCH='aarch64'
@@ -392,7 +392,7 @@ cleanup () {
     pinephone)
         dd if=$TMPDIR/boot/u-boot-sunxi-with-spl-$DEVICE-552.bin of=${SDCARD} conv=fsync bs=8k seek=1 1> /dev/null 2>&1
         ;;
-    clockworkpi-a06|nanopc-t4|pbpro|pinephonepro|quartz64-a|quartz64-b|rockpi4b|rockpi4c|rockpro64|rock64|roc-cc)
+    clockworkpi-a06|nanopc-t4|opi4-lts|pbpro|pinephonepro|quartz64-a|quartz64-b|rock3a|rock64|roc-cc|rockpi4b|rockpi4c|rockpro64)
         dd if=$TMPDIR/boot/idbloader.img of=${SDCARD} seek=64 conv=notrunc,fsync 1> /dev/null 2>&1
         dd if=$TMPDIR/boot/u-boot.itb of=${SDCARD} seek=16384 conv=notrunc,fsync 1> /dev/null 2>&1
         ;;
@@ -523,6 +523,7 @@ DEVICE=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
         "ohc4"          "Odroid HC4" \
         "on2"           "Odroid N2" \
         "on2-plus"      "Odroid N2+" \
+        "opi4-lts"      "Orange Pi 4 LTS" \
         "pine64-lts"    "Pine64-LTS / Sopine" \
         "pine64"        "Pine64+" \
         "pinebook"      "Pinebook" \
@@ -533,6 +534,7 @@ DEVICE=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
         "pinetab"       "PineTab" \
         "radxa-zero"    "Radxa Zero" \
         "rpi4"          "Raspberry Pi 4/400/3+/3" \
+        "rock3a"        "Rock 3A" \
         "rock64"        "Rock64" \
         "rockpi4b"      "Rock Pi 4B" \
         "rockpi4c"      "Rock Pi 4C" \
