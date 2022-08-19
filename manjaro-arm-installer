@@ -382,7 +382,7 @@ cleanup () {
     oc4|ohc4|on2|on2-plus)
         dd if=$TMPDIR/boot/u-boot.bin of=${SDCARD} conv=fsync,notrunc bs=512 seek=1 1> /dev/null 2>&1
         ;;
-    vim1|vim2|vim3)
+    radxa-zero|vim1|vim2|vim3)
         dd if=$TMPDIR/boot/u-boot.bin of=${SDCARD} conv=fsync bs=1 count=442 1> /dev/null 2>&1
         dd if=$TMPDIR/boot/u-boot.bin of=${SDCARD} conv=fsync bs=512 skip=1 seek=1 1> /dev/null 2>&1
         ;;
@@ -531,6 +531,7 @@ DEVICE=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
         "pinephonepro"  "PinePhone Pro (Experimental)" \
         "pbpro"         "Pinebook Pro" \
         "pinetab"       "PineTab" \
+        "radxa-zero"    "Radxa Zero" \
         "rpi4"          "Raspberry Pi 4/400/3+/3" \
         "rock64"        "Rock64" \
         "rockpi4b"      "Rock Pi 4B" \
