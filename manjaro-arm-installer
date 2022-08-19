@@ -392,7 +392,7 @@ cleanup () {
     pinephone)
         dd if=$TMPDIR/boot/u-boot-sunxi-with-spl-$DEVICE-552.bin of=${SDCARD} conv=fsync bs=8k seek=1 1> /dev/null 2>&1
         ;;
-    clockworkpi-a06|nanopc-t4|pbpro|pinephonepro|rockpi4b|rockpi4c|rockpro64|rock64|roc-cc|quartz64-a)
+    clockworkpi-a06|nanopc-t4|pbpro|pinephonepro|quartz64-a|quartz64-b|rockpi4b|rockpi4c|rockpro64|rock64|roc-cc)
         dd if=$TMPDIR/boot/idbloader.img of=${SDCARD} seek=64 conv=notrunc,fsync 1> /dev/null 2>&1
         dd if=$TMPDIR/boot/u-boot.itb of=${SDCARD} seek=16384 conv=notrunc,fsync 1> /dev/null 2>&1
         ;;
@@ -540,6 +540,7 @@ DEVICE=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
         "roc-cc"        "LibreComputer Renegade" \
         "nanopc-t4"     "NanoPC T4" \
         "quartz64-a"    "Quartz64 Model A" \
+        "quartz64-b"    "Quartz64 Model B" \
         "vim1"          "Khadas Vim 1" \
         "vim2"          "Khadas Vim 2" \
         "vim3"          "Khadas Vim 3" \
@@ -561,7 +562,7 @@ if [ ! -z "$DEVICE" ]; then
         "kde-plasma"    "Full KDE/Plasma Desktop    (full featured)" \
         "xfce"          "Full XFCE desktop and apps (full featured)" \
         "mate"          "Full MATE desktop and apps (lightweight)" \
-        "gnome"         "Full Gnome desktop and apps (EXPERIMANTAL)" \
+        "gnome"         "Full Gnome desktop and apps (full featured)" \
         "sway"          "Minimal Sway WM with apps  (very light)" \
         "lxqt"          "Full LXQT Desktop and apps (lightweight)" \
         "i3"            "Mininal i3 WM with apps    (very light)" \
