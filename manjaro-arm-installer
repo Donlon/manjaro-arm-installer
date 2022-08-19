@@ -2,7 +2,7 @@
 
 # Set globals
 # *****************************
-VERSION="1.4.11"
+VERSION="1.4.12"
 # *****************************
 TMPDIR=/var/tmp/manjaro-arm-installer
 ARCH='aarch64'
@@ -298,7 +298,7 @@ prepare_card () {
         done
         #partition with boot and root
         case "$DEVICE" in
-            oc2|on2|on2-plus|oc4|ohc4|vim1|vim2|vim3|gtking-pro|gsking-x|edgev|rpi4|pinephone)
+            edgev|gsking-x|gtking-pro|oc2|on2|on2-plus|oc4|ohc4|pinephone|radxa-zero|rpi4|vim1|vim2|vim3)
             parted -s $SDCARD mklabel msdos 1> /dev/null 2>&1
             ;;
             *)
@@ -379,20 +379,20 @@ cleanup () {
         dd if=$TMPDIR/boot/bl1.bin.hardkernel of=${SDCARD} conv=fsync bs=512 skip=1 seek=1 1> /dev/null 2>&1
         dd if=$TMPDIR/boot/u-boot.gxbb of=${SDCARD} conv=fsync bs=512 seek=97 1> /dev/null 2>&1
         ;;
-    on2|on2-plus|oc4|ohc4)
+    oc4|ohc4|on2|on2-plus)
         dd if=$TMPDIR/boot/u-boot.bin of=${SDCARD} conv=fsync,notrunc bs=512 seek=1 1> /dev/null 2>&1
         ;;
     vim1|vim2|vim3)
         dd if=$TMPDIR/boot/u-boot.bin of=${SDCARD} conv=fsync bs=1 count=442 1> /dev/null 2>&1
         dd if=$TMPDIR/boot/u-boot.bin of=${SDCARD} conv=fsync bs=512 skip=1 seek=1 1> /dev/null 2>&1
         ;;
-    pinebook|pine64-lts|pine64|pinetab|pine-h64)
+    pine64-lts|pine64|pinebook|pinetab|pine-h64)
         dd if=$TMPDIR/boot/u-boot-sunxi-with-spl-$DEVICE.bin of=${SDCARD} conv=fsync bs=128k seek=1 1> /dev/null 2>&1
         ;;
     pinephone)
         dd if=$TMPDIR/boot/u-boot-sunxi-with-spl-$DEVICE-552.bin of=${SDCARD} conv=fsync bs=8k seek=1 1> /dev/null 2>&1
         ;;
-    pbpro|rockpro64|rockpi4b|rockpi4c|nanopc-t4|rock64|roc-cc|clockworkpi-a06|quartz64-a|pinephonepro)
+    clockworkpi-a06|nanopc-t4|pbpro|pinephonepro|rockpi4b|rockpi4c|rockpro64|rock64|roc-cc|quartz64-a)
         dd if=$TMPDIR/boot/idbloader.img of=${SDCARD} seek=64 conv=notrunc,fsync 1> /dev/null 2>&1
         dd if=$TMPDIR/boot/u-boot.itb of=${SDCARD} seek=16384 conv=notrunc,fsync 1> /dev/null 2>&1
         ;;
@@ -479,7 +479,7 @@ cleanup () {
 
 tweakinitrd_crypt () {
     case "$DEVICE" in
-    pbpro|rockpro64|rockpi4b|rockpi4c)
+    pbpro|rockpi4b|rockpi4c|rockpro64)
       # Use the proper mkinitcpio.
       cat << EOF > ${TMPDIR}/root/etc/mkinitcpio.conf
 MODULES=(panfrost rockchipdrm drm_kms_helper hantro_vpu analogix_dp rockchip_rga panel_edp arc_uart cw2015_battery i2c-hid iscsi_boot_sysfs jsm pwm_bl uhid)
@@ -501,7 +501,7 @@ post_crypt () {
 
     # Modify the /boot/extlinux/extlinux.conf to match our needs
     case "$DEVICE" in
-    pbpro|rockpro64|rockpi4b|rockpi4c)
+    pbpro|rockpi4b|rockpi4c|rockpro64)
       # NOTE: I've tried to only modify the cryptdevice and root parameters but bootsplash and console=ttyS2 prevents to show the password prompt
       # TODO: Need to add plymouth support
       sed -i -e "s!APPEND.*!APPEND initrd=/initramfs-linux.img console=tty1 cryptdevice=UUID=${UUID}:ROOT_MNJRO root=/dev/mapper/ROOT_MNJRO rw rootwait!g" ${TMPDIR}/boot/extlinux/extlinux.conf
@@ -515,33 +515,33 @@ post_crypt () {
 # Using Dialog to ask for user input for variables
 DEVICE=$(dialog --clear --title "Manjaro ARM Installer v${VERSION}" \
         --menu "Choose a device:" 20 75 10 \
-        "rpi4"          "Raspberry Pi 4/400/3+/3" \
-        "pbpro"         "Pinebook Pro" \
-        "rockpro64"     "RockPro64" \
-        "rockpi4b"      "Rock Pi 4B" \
-        "rockpi4c"      "Rock Pi 4C" \
-        "on2"           "Odroid N2" \
-        "on2-plus"      "Odroid N2+" \
+        "clockworkpi-a06" "ClockworkPi DevTerm" \
+        "generic"       "Generic" \
+        "gt1-ultimate"  "Beelink GT1 Ultimate" \
         "oc4"           "Odroid C4" \
         "oc2"           "Odroid C2" \
         "ohc4"          "Odroid HC4" \
-        "pinebook"      "Pinebook" \
+        "on2"           "Odroid N2" \
+        "on2-plus"      "Odroid N2+" \
         "pine64-lts"    "Pine64-LTS / Sopine" \
         "pine64"        "Pine64+" \
+        "pinebook"      "Pinebook" \
         "pine-h64"      "Pine H64" \
-        "pinetab"       "PineTab" \
         "pinephone"     "PinePhone" \
         "pinephonepro"  "PinePhone Pro (Experimental)" \
+        "pbpro"         "Pinebook Pro" \
+        "pinetab"       "PineTab" \
+        "rpi4"          "Raspberry Pi 4/400/3+/3" \
         "rock64"        "Rock64" \
+        "rockpi4b"      "Rock Pi 4B" \
+        "rockpi4c"      "Rock Pi 4C" \
+        "rockpro64"     "RockPro64" \
         "roc-cc"        "LibreComputer Renegade" \
         "nanopc-t4"     "NanoPC T4" \
-        "clockworkpi-a06" "ClockworkPi DevTerm" \
         "quartz64-a"    "Quartz64 Model A" \
-        "vim3"          "Khadas Vim 3" \
-        "vim2"          "Khadas Vim 2" \
         "vim1"          "Khadas Vim 1" \
-        "gt1-ultimate"  "Beelink GT1 Ultimate" \
-        "generic"       "Generic" \
+        "vim2"          "Khadas Vim 2" \
+        "vim3"          "Khadas Vim 3" \
         3>&1 1>&2 2>&3 3>&-)
 
 
