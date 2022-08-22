@@ -2,7 +2,7 @@
 
 # Set globals
 # *****************************
-VERSION="1.5.0"
+VERSION="1.5.1"
 # *****************************
 TMPDIR=/var/tmp/manjaro-arm-installer
 ARCH='aarch64'
@@ -126,6 +126,15 @@ create_install() {
     
     info "Extracting $ARCH rootfs..."
     bsdtar -xpf $TMPDIR/Manjaro-ARM-$ARCH-latest.tar.gz -C $TMPDIR/root
+    
+    # Create a "marker" that tells the packages that they're installed as part of building
+    # an image, which is currently used by the "generic-post-install" package only
+    touch $TMPDIR/root/MANJARO-ARM-IMAGE-BUILD
+
+    # Make this symlink available, it's created by systemd on a running system
+    mkdir -p $TMPDIR/root/etc
+    ln -sf ../usr/lib/os-release $TMPDIR/root/etc/os-release
+
     
     info "Setting up keyrings..."
     $NSPAWN $TMPDIR/root pacman-key --init 1> /dev/null 2>&1
@@ -269,16 +278,18 @@ create_install() {
     
     info "Cleaning install for unwanted files..."
     umount $TMPDIR/root/var/cache/pacman/pkg
-    rm -rf $TMPDIR/root/usr/bin/qemu-aarch64-static
-    rm -rf $TMPDIR/root/var/cache/pacman/pkg/*
-    rm -rf $TMPDIR/root/var/log/*
-    rm -rf $TMPDIR/root/etc/*.pacnew
-    rm -rf $TMPDIR/root/usr/lib/systemd/system/systemd-firstboot.service
-    rm -rf $TMPDIR/root/etc/machine-id
+    rm -f $TMPDIR/root/usr/bin/qemu-aarch64-static
+    rm -f $ROOTFS_IMG/rootfs_$ARCH/MANJARO-ARM-IMAGE-BUILD
+    rm -f $TMPDIR/root/var/cache/pacman/pkg/*
+    rm -f $TMPDIR/root/var/log/*
+    rm -rf $ROOTFS_IMG/rootfs_$ARCH/var/log/journal/*
+    rm -f $TMPDIR/root/etc/*.pacnew
+    rm -f $TMPDIR/root/usr/lib/systemd/system/systemd-firstboot.service
+    rm -f $TMPDIR/root/etc/machine-id
     
     # Remove temp files on host
-    rm -rf $TMPDIR/user $TMPDIR/password $TMPDIR/rootpassword
-    rm -rf $TMPDIR/Manjaro-ARM-$ARCH-latest.tar.gz*
+    rm -f $TMPDIR/user $TMPDIR/password $TMPDIR/rootpassword
+    rm -f $TMPDIR/Manjaro-ARM-$ARCH-latest.tar.gz*
 
     msg "$DEVICE $EDITION install complete"
 }
