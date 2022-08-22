@@ -289,13 +289,13 @@ prepare_card () {
         umount ${SDCARD}${SDDEV}1 1> /dev/null 2>&1
         umount ${SDCARD}${SDDEV}2 1> /dev/null 2>&1
         # Create partitions
-        #Clear first 32mb
-        dd if=/dev/zero of=${SDCARD} bs=1M count=32 1> /dev/null 2>&1
         #remove previous partitions
         for v_partition in $(parted -s $SDCARD print|awk '/^ / {print $1}')
         do
             parted -s $SDCARD rm ${v_partition} 1> /dev/null 2>&1
         done
+        #Clear first 32mb
+        dd if=/dev/zero of=${SDCARD} bs=1M count=32 1> /dev/null 2>&1
         #partition with boot and root
         case "$DEVICE" in
             edgev|gsking-x|gtking-pro|oc2|on2|on2-plus|oc4|ohc4|pinephone|radxa-zero|rpi4|vim1|vim2|vim3)
